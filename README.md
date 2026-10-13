@@ -8,6 +8,13 @@ $ node bin/vehicle-report.js 1HGCM82633A004352
 $ node bin/vehicle-report.js 1HGCM82633A004352 --json
 ```
 
+## Web page (works on a phone)
+
+`index.html` is the same report as a mobile-friendly web page. It runs entirely in the browser
+and calls the government APIs directly, so it needs no server. To host it free with GitHub Pages:
+Settings → Pages → Source "Deploy from a branch" → `main` / `(root)` → Save. The page is then at
+`https://<user>.github.io/<repo>/`, and `?vin=<VIN>` in the URL runs a lookup straight away.
+
 ## What it pulls
 
 | Section | Source | Endpoint |
