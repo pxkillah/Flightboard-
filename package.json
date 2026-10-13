@@ -1,0 +1,10 @@
+{
+  "name": "vehicle-report",
+  "version": "0.1.0",
+  "description": "VIN lookup and vehicle history report built from free public data (NHTSA vPIC, NHTSA recalls/complaints/ratings, Transport Canada recalls)",
+  "type": "module",
+  "bin": { "vehicle-report": "bin/vehicle-report.js" },
+  "scripts": { "test": "node --test test/*.test.js" },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}
