@@ -15,6 +15,7 @@
             --accent: #6ea0ff; --on-accent: #0b1220; --warn-bg: #3a1714; --warn: #ff8a80; --ok: #5fd08a; }
   }
   * { box-sizing: border-box; }
+  a { color: var(--accent); }
   body { margin: 0; background: var(--bg); color: var(--text);
          font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   main { max-width: 40rem; margin: 0 auto;
@@ -52,7 +53,7 @@
 <body>
 <main>
   <h1>VIN Report</h1>
-  <p class="sub">Recalls, complaints and crash ratings from public NHTSA and Transport Canada data.</p>
+  <p class="sub">Recalls, complaints and crash ratings from public NHTSA data.</p>
   <form id="f" autocomplete="off">
     <input id="vin" name="vin" maxlength="20" placeholder="17-character VIN" autocapitalize="characters" spellcheck="false" required>
     <button id="go">Look up</button>
@@ -103,7 +104,10 @@ function render(r) {
     <div class="meta">${esc(r.vin)}</div>
     <dl>${rows.map(([k, x]) => `<dt>${esc(k)}</dt><dd>${esc(x)}</dd>`).join('')}</dl>
     ${(v.decodeWarnings ?? []).map((w) => `<p class="meta">⚠ ${esc(w)}</p>`).join('')}`);
-  html += recallCard('Recalls in Canada', r.recallsCanada, r.errors.recallsCanada);
+  // Transport Canada's API doesn't allow requests from other websites, so link to its own search instead.
+  html += card('Recalls in Canada', `<p class="meta">Transport Canada's recall data can't be loaded on this page.</p>
+    <p><a href="https://tc.canada.ca/en/road-transportation/motor-vehicle-safety/motor-vehicle-safety-recalls-database" target="_blank" rel="noopener">Check on Transport Canada →</a></p>
+    <p class="meta">Search for ${esc([v.make, v.model, v.year].filter(Boolean).join(' · '))}.</p>`);
   html += recallCard('Recalls in the US', r.recallsUS, r.errors.recallsUS);
   if (r.errors.complaints) html += card('Owner complaints', `<p class="err">Couldn't load: ${esc(r.errors.complaints)}</p>`);
   else if (r.complaints) {
@@ -124,9 +128,9 @@ function render(r) {
 
 async function lookup(vin) {
   $('#go').disabled = true;
-  $('#out').innerHTML = card('Looking up…', '<p class="meta">Contacting NHTSA and Transport Canada. This can take up to 20 seconds.</p>');
+  $('#out').innerHTML = card('Looking up…', '<p class="meta">Contacting NHTSA. This can take up to 20 seconds.</p>');
   try {
-    $('#out').innerHTML = render(await buildReport(vin));
+    $('#out').innerHTML = render(await buildReport(vin, { include: { recallsCanada: false } }));
   } catch (e) {
     $('#out').innerHTML = card('Something went wrong', `<p class="err">${esc(e.message)}</p>`);
   } finally {
