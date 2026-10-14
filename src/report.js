@@ -2,6 +2,7 @@ import { validateVin } from './vin.js';
 import { decodeVin } from './sources/vpic.js';
 import * as nhtsa from './sources/nhtsa.js';
 import * as tc from './sources/transportCanada.js';
+import { recallMismatch } from './recallMatch.js';
 
 // Builds a vehicle report from public sources. Each section fails independently so
 // one slow or down API doesn't sink the whole report.
@@ -37,6 +38,9 @@ export async function buildReport(input, { fetch, include = {}, force = false } 
       report.errors[name] = e.message;
     }
   }));
+  for (const key of ['recallsUS', 'recallsCanada']) {
+    report[key]?.forEach((r) => { r.mismatch = recallMismatch(r, v); });
+  }
   return report;
 }
 
@@ -55,9 +59,11 @@ export function formatReport(r) {
   }
   const recallBlock = (title, list) => {
     if (!list) return;
-    L.push('', `${title}: ${list.length}`);
-    for (const x of list) {
+    const likely = list.filter((x) => !x.mismatch?.length).length;
+    L.push('', `${title}: ${likely} may apply` + (likely < list.length ? `, ${list.length - likely} probably not this vehicle` : ''));
+    for (const x of [...list].sort((a, b) => (a.mismatch?.length ? 1 : 0) - (b.mismatch?.length ? 1 : 0))) {
       L.push(`  [${x.campaign}] ${x.date ?? ''} ${x.component ?? ''}`.trimEnd());
+      for (const m of x.mismatch ?? []) L.push(`    (probably not this vehicle: ${m})`);
       if (x.summary) L.push(`    ${x.summary.replace(/\s+/g, ' ').slice(0, 240)}`);
       if (x.parkIt) L.push('    ** DO NOT DRIVE - park until repaired **');
     }
