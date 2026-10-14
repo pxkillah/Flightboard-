@@ -29,7 +29,7 @@ Settings → Pages → Source "Deploy from a branch" → `main` / `(root)` → S
 Each section is fetched on its own. If one API is down, the report still comes back with that
 section listed under `errors`.
 
-Recalls are matched by year/make/model, not by the individual VIN. They show which campaigns
+Recalls are fetched by year/make/model, not by the individual VIN. Each recall's summary is then compared with the decoded VIN (drive type, engine, fuel, roof height), and recalls that explicitly name a different configuration are flagged as probably not applying (`mismatch` in the JSON). They are flagged, never dropped. They show which campaigns
 apply to the model, not whether this particular car has been repaired. For a per-VIN open-recall
 check, use the manufacturer's recall lookup or Transport Canada's.
 

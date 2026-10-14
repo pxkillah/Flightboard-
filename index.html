@@ -45,6 +45,7 @@
   .err { color: var(--warn); }
   .none { color: var(--ok); margin: 0; }
   .bar { display: flex; justify-content: space-between; gap: .5rem; font-size: .95rem; padding: .2rem 0; }
+  details.other { border-top: 1px solid var(--line); margin-top: .5rem; padding-top: .5rem; }
   details summary { cursor: pointer; color: var(--accent); font-size: .9rem; margin-top: .3rem; }
   .note { color: var(--muted); font-size: .85rem; }
   [hidden] { display: none !important; }
@@ -73,19 +74,32 @@ function card(title, body, count) {
   return `<section class="card"><h2><span>${esc(title)}</span>${count == null ? '' : `<span class="count">${count}</span>`}</h2>${body}</section>`;
 }
 
-function recallCard(title, list, err) {
-  if (err) return card(title, `<p class="err">Couldn't load: ${esc(err)}</p>`);
-  if (!list) return '';
-  if (!list.length) return card(title, '<p class="none">No recalls found for this model.</p>', 0);
-  const items = list.map((r) => `<div class="item">
+function recallItem(r) {
+  return `<div class="item">
       <div class="meta">${esc(r.date)} · #${esc(r.campaign)}</div>
       <strong>${esc(r.component)}</strong>
       ${r.parkIt ? '<div><span class="badge">DO NOT DRIVE until repaired</span></div>' : ''}
       ${r.parkOutside ? '<div><span class="badge">Park outside (fire risk)</span></div>' : ''}
+      ${(r.mismatch ?? []).map((m) => `<p class="meta">Why it probably doesn't apply: ${esc(m)}</p>`).join('')}
       ${r.summary ? `<p>${esc(r.summary)}</p>` : ''}
       ${r.remedy ? `<details><summary>Remedy</summary><p>${esc(r.remedy)}</p></details>` : ''}
-    </div>`).join('');
-  return card(title, items, list.length);
+    </div>`;
+}
+
+function recallCard(title, list, err) {
+  if (err) return card(title, `<p class="err">Couldn't load: ${esc(err)}</p>`);
+  if (!list) return '';
+  if (!list.length) return card(title, '<p class="none">No recalls found for this model.</p>', 0);
+  const likely = list.filter((r) => !r.mismatch?.length);
+  const unlikely = list.filter((r) => r.mismatch?.length);
+  let body = likely.length
+    ? likely.map(recallItem).join('')
+    : '<p class="none">None of this model\'s recalls appear to match your vehicle.</p>';
+  if (unlikely.length) {
+    body += `<details class="other"><summary>${unlikely.length} more for this model that probably don't apply to yours</summary>${unlikely.map(recallItem).join('')}</details>`;
+  }
+  body += '<p class="meta">Matched by reading each recall\'s wording against your VIN\'s specs. To confirm for your exact vehicle, enter the VIN at <a href="https://www.nhtsa.gov/recalls" target="_blank" rel="noopener">nhtsa.gov/recalls</a> or ask a dealer.</p>';
+  return card(title, body, likely.length);
 }
 
 function render(r) {
@@ -122,7 +136,7 @@ function render(r) {
           <div class="meta">Overall ${esc(s.overall)} · Front ${esc(s.frontCrash)} · Side ${esc(s.sideCrash)} · Rollover ${esc(s.rollover)}</div></div>`).join('')
       : '<p class="meta">Not crash-tested by NHTSA.</p>');
   }
-  html += '<p class="note">Recalls are matched by year, make and model. Check with a dealer whether this specific vehicle has had the repair done.</p>';
+  html += '<p class="note">Recall lists come from records for this model. Check with a dealer whether this vehicle has had any recall repairs done.</p>';
   return html;
 }
 
