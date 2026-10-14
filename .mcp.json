@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "marketcheck-docs": {
+      "type": "http",
+      "url": "https://developers.marketcheck.com/api/docs-mcp"
+    }
+  }
+}
