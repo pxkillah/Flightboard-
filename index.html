@@ -737,14 +737,30 @@ function failedPanel(msg) {
 function panel(id, ic, title, aside, body) {
   return `<section class="panel" id="${id}"><header class="panel-head"><span class="panel-icon">${icon(ic)}</span><h2>${esc(title)}</h2>${aside ? `<span class="panel-aside">${esc(aside)}</span>` : ''}</header>${body}</section>`;
 }
-const loadError = (msg) => `<p class="load-error">${icon('alert')}<span>Couldn't load this section: ${esc(msg)}.</span><button type="button" class="link-btn" data-retry>Try again</button></p>`;
+// What went wrong, in words a person can act on. Kinds come from errorKind() in src/http.js.
+const PROBLEMS = {
+  unreachable: "Couldn't reach NHTSA. Check your internet connection, then try again.",
+  timeout: 'NHTSA took too long to answer. Try again in a minute.',
+  unavailable: "NHTSA's service isn't responding right now. Try again in a few minutes.",
+  refused: "NHTSA couldn't answer for this vehicle.",
+  format: "NHTSA sent this in a form the page doesn't recognize, so it isn't shown rather than risk showing it wrong. Please tell us with Send feedback below.",
+};
+const problem = (kind) => PROBLEMS[kind] ?? 'Something went wrong loading this from NHTSA. Try again.';
+const loadError = (kind) => `<p class="load-error">${icon('alert')}<span>${esc(problem(kind))}</span><button type="button" class="link-btn" data-retry>Try again</button></p>`;
 
 function renderReport() {
   const r = current.report;
   const v = r.vehicle;
   if (!v?.make) {
-    $('#report').innerHTML = panel('decode', 'alert', "We couldn't decode this VIN", '',
-      `<p class="empty-line info">${icon('info')}<span>NHTSA's decoder didn't recognize ${esc(r.vin)}${r.errors.vehicle ? ` (${esc(r.errors.vehicle)})` : ''}. Check each character against the vehicle. VINs for vehicles built for markets outside North America may not decode.</span></p>`)
+    const kind = r.errorKinds?.vehicle ?? 'unrecognized';
+    // Only an answer without a make means the VIN is unknown. Any other failure is NHTSA's,
+    // and the VIN shouldn't be blamed for it.
+    $('#report').innerHTML = (kind === 'unrecognized'
+      ? panel('decode', 'alert', "We couldn't decode this VIN", '',
+        `<p class="empty-line info">${icon('info')}<span>NHTSA's decoder didn't recognize ${esc(r.vin)}. Check each character against the vehicle. VINs for vehicles built for markets outside North America may not decode.</span></p>`)
+      : panel('decode', 'alert', "Couldn't load the report", '',
+        `<p class="empty-line info">${icon('info')}<span>${esc(problem(kind))}${r.vinCheck?.valid ? ' The VIN itself looks right: its check digit matches.' : ''}</span></p>
+        <p class="gap-top"><button type="button" class="btn primary" data-retry>${icon('refresh')}Try again</button></p>`))
       + '<section class="panel" id="records"></section>';
     renderRecords();
     return;
@@ -849,7 +865,7 @@ function recallsPanel(r) {
   const v = r.vehicle;
   let body;
   let aside = '';
-  if (r.errors.recallsUS) body = loadError(r.errors.recallsUS);
+  if (r.errors.recallsUS) body = loadError(r.errorKinds?.recallsUS);
   else if (!r.recallsUS?.length) body = `<p class="empty-line">${icon('check')}<span>NHTSA lists no recalls for the ${esc(ymm(v))}.</span></p>`;
   else {
     const likely = likelyRecalls(r).sort(newestFirst);
@@ -874,7 +890,7 @@ function recallsPanel(r) {
 function complaintsPanel(r) {
   const c = r.complaints;
   let body;
-  if (r.errors.complaints) body = loadError(r.errors.complaints);
+  if (r.errors.complaints) body = loadError(r.errorKinds?.complaints);
   else if (!c) body = '';
   else if (!c.total) body = `<p class="empty-line">${icon('check')}<span>No owner complaints have been filed with NHTSA for this model.</span></p>`;
   else {
@@ -896,7 +912,7 @@ function stars(val) {
 function ratingsPanel(r) {
   const list = r.safetyRatings;
   let body;
-  if (r.errors.safetyRatings) body = loadError(r.errors.safetyRatings);
+  if (r.errors.safetyRatings) body = loadError(r.errorKinds?.safetyRatings);
   else if (!list?.length) body = `<p class="empty-line info">${icon('info')}<span>NHTSA hasn't crash-tested this model. Its program covers most cars, SUVs and pickups; heavier vans and commercial models often aren't tested.</span></p>`;
   else body = list.map((x) => `<div class="rating"><p class="rating-name">${esc(x.description)}</p><dl class="stars-list">${[['Overall', x.overall], ['Frontal crash', x.frontCrash], ['Side crash', x.sideCrash], ['Rollover', x.rollover]].map(([k, val]) => `<div><dt>${k}</dt><dd>${stars(val)}</dd></div>`).join('')}</dl></div>`).join('');
   return panel('ratings', 'star', 'Crash ratings', '', body);

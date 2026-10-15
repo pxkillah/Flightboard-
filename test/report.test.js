@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { buildReport, formatReport } from '../src/report.js';
 import { rowsToObjects, parseRecalls as parseTc } from '../src/sources/transportCanada.js';
 import { parseDecode } from '../src/sources/vpic.js';
-import { parseComplaints } from '../src/sources/nhtsa.js';
+import { parseComplaints, parseRecalls } from '../src/sources/nhtsa.js';
 
 const VIN = '1HGCM82633A004352';
 const json = (body, status = 200) => ({ ok: status < 400, status, text: async () => JSON.stringify(body) });
@@ -85,4 +85,51 @@ test('complaint components keep names that contain a comma', () => {
 test('TC parser tolerates missing values', () => {
   assert.deepEqual(rowsToObjects({ ResultSet: [[{ Name: 'Recall number', Value: null }]] }), [{ 'Recall number': null }]);
   assert.deepEqual(parseTc(null), []);
+});
+
+test('a changed NHTSA format is an error, never "no recalls"', async () => {
+  // NHTSA renames its list: the report must not claim there are no recalls or complaints.
+  const { fetch } = stubFetch([
+    [/recallsByVehicle/, json({ Count: 3, Results: [{ campaign: 'X' }, { campaign: 'Y' }, { campaign: 'Z' }] })],
+    [/complaintsByVehicle/, json({ count: 2, results: [{ parts: 'AIR BAGS' }, { parts: 'ENGINE' }] })],
+    [/SafetyRatings\/modelyear/, json({ Data: [] })],
+    ...routes,
+  ]);
+  const r = await buildReport(VIN, { fetch, include: { recallsCanada: false } });
+  assert.equal(r.recallsUS, undefined);
+  assert.equal(r.complaints, undefined);
+  assert.equal(r.safetyRatings, undefined);
+  assert.deepEqual(r.errorKinds, { recallsUS: 'format', complaints: 'format', safetyRatings: 'format' });
+});
+
+test('empty answers in the expected format are still "none"', () => {
+  assert.deepEqual(parseRecalls({ Count: 0, results: [] }), []);
+  assert.equal(parseComplaints({ count: 0, results: [] }).total, 0);
+  assert.deepEqual(parseRecalls(null), [], 'a 404 means no data');
+  assert.deepEqual(parseRecalls({ Count: 0, Message: 'No results found for this request' }), [], 'a count of 0 without a list');
+  assert.throws(() => parseRecalls({ Count: 2, Message: 'Results returned successfully' }), /expected format/);
+});
+
+test('NHTSA being down is not blamed on the VIN', async () => {
+  const down = stubFetch([[/vpic\.nhtsa\.dot\.gov/, json({}, 400)], ...routes]);
+  const r1 = await buildReport(VIN, { fetch: down.fetch });
+  assert.equal(r1.errorKinds.vehicle, 'refused');
+
+  const changed = stubFetch([[/vpic\.nhtsa\.dot\.gov/, json({ results: [{ Make: 'HONDA' }] })], ...routes]);
+  assert.equal((await buildReport(VIN, { fetch: changed.fetch })).errorKinds.vehicle, 'format');
+
+  const unknown = stubFetch([[/vpic\.nhtsa\.dot\.gov/, json({ Results: [{ Make: '', Model: '', ModelYear: '', ErrorCode: '11' }] })], ...routes]);
+  assert.equal((await buildReport(VIN, { fetch: unknown.fetch })).errorKinds.vehicle, 'unrecognized');
+});
+
+test('CLI text drops terminal control characters from API data', async () => {
+  const evil = 'Inflator \u001b]0;pwned\u0007may \u001b[2J\u009b31mrupture.';
+  const { fetch } = stubFetch([
+    [/recallsByVehicle/, json({ results: [{ NHTSACampaignNumber: '03V123000', Component: 'AIR\u001b[31m BAGS', Summary: evil }] })],
+    ...routes,
+  ]);
+  const text = formatReport(await buildReport(VIN, { fetch }));
+  assert.doesNotMatch(text, /[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/);
+  assert.match(text, /Inflator \]0;pwnedmay \[2J31mrupture\./);
+  assert.match(text, /\n/, 'newlines stay');
 });

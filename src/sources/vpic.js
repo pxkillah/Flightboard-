@@ -1,6 +1,6 @@
 // NHTSA Product Information Catalog (vPIC) VIN decoder. Free, no key.
 // https://vpic.nhtsa.dot.gov/api/
-import { getJson } from '../http.js';
+import { getJson, FormatError } from '../http.js';
 
 const BASE = 'https://vpic.nhtsa.dot.gov/api/vehicles';
 
@@ -16,7 +16,13 @@ const FIELDS = {
 };
 
 export function parseDecode(json) {
-  const r = json?.Results?.[0];
+  if (json === null || json === undefined) return null;
+  // vPIC returns every field for every VIN, empty when unknown, so a missing Make
+  // means the format changed, not that the VIN is unknown.
+  if (!Array.isArray(json.Results) || (json.Results[0] && !('Make' in json.Results[0]))) {
+    throw new FormatError("NHTSA's VIN decoder data");
+  }
+  const r = json.Results[0];
   if (!r) return null;
   const out = {};
   for (const [key, src] of Object.entries(FIELDS)) {
