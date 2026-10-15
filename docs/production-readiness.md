@@ -4,7 +4,7 @@ Status of this app against every item in `PRODUCTION_STANDARD.md`. Update the ro
 
 Last full review: 2026-10-15.
 
-**160 items:** 58 met, 2 gaps, 29 need a person, 71 don't apply (each says why).
+**160 items:** 60 met, 2 gaps, 27 need a person, 71 don't apply (each says why).
 
 ## What the owner needs to do
 
@@ -15,13 +15,10 @@ These need a decision or a setting only the owner can change. The details are in
 - **AUTH-03** MFA, plus a recovery path for the user who lost their phone
 - **SEC-02** Every key that was ever pasted into a config file or chat has been rotated
 - **SEC-03** Every installed package confirmed to exist and to be the one you meant
-- **SEC-04** Dependency scanning, because AI-added libraries go unreviewed
 - **SEC-11** Least-privilege access for everyone, including AI agents holding production credentials
-- **SEC-15** A vulnerability disclosure process for the day a stranger emails you one
 - **COMP-08** Quarterly access reviews that someone signs off on
 - **COMP-09** Terms and a privacy policy that match what the code actually does
 - **COMP-10** Every account, domain and repo in the company's name, not the prototype builder's
-- **OPS-03** A deploy pipeline that runs the tests before anything reaches customers
 - **OPS-17** Cost alerts, so a runaway loop shows up the same day and not on the invoice
 - **OPS-18** A disaster recovery plan, written down and tested once a year
 - **OBS-04** Alerts that page a human, tuned until they stop paging for nothing
@@ -104,18 +101,18 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 | SEC-01 | Secrets kept out of the code, the repo and AI chat history | Met | No key, token or password in any file or in the history of any branch or PR (searched with `git log -p` on a mirror clone). The app needs no keys. |
 | SEC-02 | Every key that was ever pasted into a config file or chat has been rotated | Needs a person | Nothing in the repo to rotate. **Owner:** check whether any key (for example a MarketCheck API key) was ever pasted into a Claude session or environment setting, and rotate it if so. |
 | SEC-03 | Every installed package confirmed to exist and to be the one you meant | Needs a person | No npm packages; the four fonts match the published @fontsource 5.3.0 files byte for byte. Unconfirmed: the `.mcp.json` MarketCheck docs endpoint, which this environment couldn't reach. **Owner:** confirm it connects in a Claude Code session, or delete `.mcp.json` if MarketCheck isn't being evaluated. |
-| SEC-04 | Dependency scanning, because AI-added libraries go unreviewed | Met | No code dependencies to scan. Dependabot (`.github/dependabot.yml`) checks the workflow actions and npm monthly. **Owner:** turn on Dependabot alerts in Settings → Code security. |
+| SEC-04 | Dependency scanning, because AI-added libraries go unreviewed | Met | No code dependencies to scan. Dependabot alerts and security updates are on (confirmed by the owner, 2026-10-15), and `.github/dependabot.yml` checks the workflow actions and npm monthly. |
 | SEC-05 | Input sanitization everywhere a user can type | Met | Every input is validated in `src/`: VIN (`validateVin`), records (`makeRecord`, including imports), feedback (`feedbackUrl`). Only own record types count, so `constructor` is rejected. |
 | SEC-06 | Protection against SQL injection, XSS, CSRF and the rest of the OWASP Top 10 | Met | All page HTML from API or user text goes through `esc()`; a Chromium run with hostile HTML in every field injected nothing. The CLI strips terminal control characters (test). No SQL or cookies, so no SQL injection or CSRF. |
 | SEC-07 | File uploads scanned, size-limited and stored where they can't execute | Met | The only upload is Restore: read locally, parsed as JSON, re-validated record by record, never executed or served. Files over 5 MB are refused. |
 | SEC-08 | CORS rules that aren't "allow everything" | N/A | No server or API of our own to set CORS on; the page is a client of NHTSA's CORS-enabled API. |
 | SEC-09 | Security headers on every response | Met | `index.html` sets a Content-Security-Policy meta tag (scripts and styles only from the site, network only to the two NHTSA hosts) and `no-referrer`. Every flow ran in Chromium with zero violations; `test/page.test.js` guards it. Limit: GitHub Pages can't send real headers, so `frame-ancestors`, `nosniff` and Permissions-Policy aren't set; the clickjacking risk is low here. |
 | SEC-10 | Encryption at rest and in transit | Met | Every request is HTTPS (constant https API bases; GitHub enforces HTTPS on github.io). At rest, records sit in the browser's own storage on the visitor's device. |
-| SEC-11 | Least-privilege access for everyone, including AI agents holding production credentials | Needs a person | `main` has no branch protection, and Claude sessions push branches with the owner's GitHub access. **Owner:** add a ruleset on `main` (Settings → Rules): require a pull request and the CI check before merging, block force pushes and deletion. Then only reviewed, green changes reach visitors. |
+| SEC-11 | Least-privilege access for everyone, including AI agents holding production credentials | Needs a person | The "Protect main" ruleset (verified 2026-10-15) means nothing reaches visitors without a pull request that passes `test (22)` and `test (24)`: no direct pushes, force pushes or deletion, and no bypass entries. Remaining risk: Claude sessions act with the owner's GitHub identity, so a session could merge its own PR once the tests pass, and GitHub can't require a second approver on a one-person repo. **Owner decides:** accept that, or add a second maintainer and require one approval. |
 | SEC-12 | Logs that record who did what, without passwords, tokens or card numbers | N/A | No server, accounts or logs; deploys are attributed by git history. |
 | SEC-13 | A penetration test before the enterprise customer's security team runs their own | N/A | No business customers and no server-side attack surface. The client side was tested for XSS (SEC-06) and the CSP (SEC-09). Re-check if the app gains a server or a business customer. |
 | SEC-14 | Answers to the enterprise security questionnaire, with evidence behind each one | N/A | Free public tool; no buyer sends a questionnaire. Re-check if it's offered to an organisation. |
-| SEC-15 | A vulnerability disclosure process for the day a stranger emails you one | Needs a person | `SECURITY.md` says how to report privately and not to use the public feedback button. **Owner:** turn on private vulnerability reporting (Settings → Code security → Private vulnerability reporting); until then the link in `SECURITY.md` doesn't work. |
+| SEC-15 | A vulnerability disclosure process for the day a stranger emails you one | Met | `SECURITY.md` explains how to report privately, and GitHub private vulnerability reporting is on (verified through GitHub's API, 2026-10-15). |
 | SEC-16 | A plan for the day a laptop with production access is stolen | Met | "If a device with access is lost or stolen" checklist in `SECURITY.md`. Owner should read it once so it's familiar. |
 
 ## Compliance (COMP)
@@ -129,7 +126,7 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 | COMP-05 | PCI scope understood, and card numbers kept out of your database | N/A | No payments or card fields. |
 | COMP-06 | GDPR deletion requests that reach every table, backup and log | Met | Everything the app keeps is on the visitor's device and deletable there (Remove from this device; Erase all in the footer). Feedback issues are public on GitHub; the owner deletes one on request (contact: see COMP-09). |
 | COMP-07 | Data residency for the customer whose contract says EU only | N/A | No server-side storage or contracts. What leaves the device goes to NHTSA (US) and GitHub by design. |
-| COMP-08 | Quarterly access reviews that someone signs off on | Needs a person | Production access is push access to `main`: the owner (sole admin) and Claude sessions using the owner's GitHub connection. **Owner:** once a quarter, review collaborators, GitHub Apps and OAuth apps (including Claude), deploy keys and tokens, and the `main` ruleset; note the date and outcome here. |
+| COMP-08 | Quarterly access reviews that someone signs off on | Needs a person | Production access is merging to `main` (now only through a pull request with passing tests): the owner (sole admin) and Claude sessions using the owner's GitHub connection. **Owner:** once a quarter, review collaborators, GitHub Apps and OAuth apps (including Claude), deploy keys and tokens, and the "Protect main" ruleset; note the date and outcome here. |
 | COMP-09 | Terms and a privacy policy that match what the code actually does | Needs a person | The README now has a Privacy section and the footer says what goes to NHTSA and what stays on the device; the CLI credits Transport Canada's Open Government Licence. **Owner decides:** the copyright holder for a `LICENSE` file (`package.json` says MIT but there's no LICENSE, so the code isn't actually licensed), and a private contact for privacy requests (issues are public). |
 | COMP-10 | Every account, domain and repo in the company's name, not the prototype builder's | Needs a person | The repo, site and feedback destination belong to the personal account pxkillah (no custom domain). **Owner decides:** keep it personal and say so here, or move to an organisation and a custom domain before the link spreads. Moving strands saved records unless visitors back up and restore. |
 
@@ -139,7 +136,7 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 |---|---|---|---|
 | OPS-01 | Dev, staging and production environments that match | Met | No build step: the files served locally (`python3 -m http.server`) are exactly what GitHub Pages serves. There's no staging; preview branches locally. |
 | OPS-02 | Infrastructure as code, so the setup isn't in one person's memory | Met | The only infrastructure is GitHub Pages serving `main` from the repo root (README). CI, the live check and Dependabot are code in `.github/`. |
-| OPS-03 | A deploy pipeline that runs the tests before anything reaches customers | Needs a person | CI runs `npm test` on Node 22 and 24 for every PR and push to `main`, but Pages publishes `main` whether or not CI passed. **Owner:** require the CI check in the `main` ruleset (SEC-11). |
+| OPS-03 | A deploy pipeline that runs the tests before anything reaches customers | Met | CI runs `npm test` on Node 22 and 24 for every PR, and the "Protect main" ruleset requires both checks to pass before merging (verified 2026-10-15), so only tested changes reach GitHub Pages. |
 | OPS-04 | One-click rollbacks | Met | Revert the merged PR with GitHub's Revert button (or `git revert`); Pages redeploys in about a minute. `docs/runbook.md`. |
 | OPS-05 | Zero-downtime deploys | Gap | Pages swaps files atomically, but browsers cache them for 10 minutes, so a reload just after a deploy can pair the new `app.js` with old cached `src/` modules and break if their exports changed. Runbook says to keep `src/` exports backward compatible for one release. Fix (medium): version the module URLs. |
 | OPS-06 | Feature flags, so code can ship without the feature | N/A | No server-side configuration; unreleased work stays on branches. Re-check if a feature needs a staged rollout. |
@@ -244,8 +241,8 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 | ID | Requirement | Status | Notes |
 |---|---|---|---|
 | CODE-01 | Code a human can read | Met | Small, commented modules in `src/`; the page is split into markup, styles and script. |
-| CODE-02 | Code review on every change | Needs a person | Every change has come through a PR merged by the owner, but nobody else reviews and `main` isn't protected. See SEC-11 and PEOPLE-01. |
-| CODE-03 | A branching strategy, so two people don't overwrite each other | Met | Work happens on branches and reaches `main` through pull requests (stated in `CLAUDE.md`). |
+| CODE-02 | Code review on every change | Needs a person | The ruleset makes every change go through a pull request, but nobody besides the owner reviews them. See PEOPLE-01. |
+| CODE-03 | A branching strategy, so two people don't overwrite each other | Met | Work happens on branches and reaches `main` through pull requests, enforced by the "Protect main" ruleset and stated in `CLAUDE.md`. |
 | CODE-04 | Monthly dependency upgrades, never two major versions behind | Met | No npm dependencies; Dependabot checks workflow actions and npm monthly. |
 | CODE-05 | Framework and runtime upgrades before the old version loses security patches | Met | Node 22 or later (18 and 20 no longer get security fixes); CI tests 22 and 24. |
 | CODE-06 | Dead code from earlier attempts deleted | Met | No unused functions in `src/` or `app.js` (checked 2026-10-15). A few constants are exported but only used inside their module. |
