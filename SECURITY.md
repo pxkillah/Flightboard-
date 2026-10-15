@@ -34,5 +34,6 @@ From another device, as soon as possible:
    expect. Revert anything unexpected (see `docs/runbook.md`).
 5. Check collaborators, rulesets, Pages settings and Actions secrets for changes.
 
-A ruleset that requires a pull request before merging to `main` limits what a stolen login
-can publish without being noticed. See `docs/production-readiness.md` (SEC-11).
+The "Protect main" ruleset requires a pull request with passing tests and blocks force
+pushes, so anything a stolen login publishes leaves a pull request behind and can be
+reverted. See `docs/production-readiness.md` (SEC-11).
