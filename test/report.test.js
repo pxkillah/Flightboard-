@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { buildReport, formatReport } from '../src/report.js';
 import { rowsToObjects, parseRecalls as parseTc } from '../src/sources/transportCanada.js';
 import { parseDecode } from '../src/sources/vpic.js';
+import { parseComplaints } from '../src/sources/nhtsa.js';
 
 const VIN = '1HGCM82633A004352';
 const json = (body, status = 200) => ({ ok: status < 400, status, text: async () => JSON.stringify(body) });
@@ -74,6 +75,11 @@ test('invalid VIN stops before any network call unless forced', async () => {
 test('vPIC decode warnings surface', () => {
   const v = parseDecode({ Results: [{ Make: 'X', ErrorCode: '1,11', ErrorText: '1 - Check Digit incorrect; 11 - Incorrect Model Year' }] });
   assert.equal(v.decodeWarnings.length, 2);
+});
+
+test('complaint components keep names that contain a comma', () => {
+  const c = parseComplaints({ results: [{ components: 'SERVICE BRAKES, HYDRAULIC,ENGINE' }, { components: 'SERVICE BRAKES, HYDRAULIC' }] });
+  assert.deepEqual(c.topComponents, [{ component: 'SERVICE BRAKES, HYDRAULIC', count: 2 }, { component: 'ENGINE', count: 1 }]);
 });
 
 test('TC parser tolerates missing values', () => {

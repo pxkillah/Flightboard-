@@ -15,6 +15,17 @@ and calls the government APIs directly, so it needs no server. To host it free w
 Settings → Pages → Source "Deploy from a branch" → `main` / `(root)` → Save. The page is then at
 `https://<user>.github.io/<repo>/`, and `?vin=<VIN>` in the URL runs a lookup straight away.
 
+The page also has **My records**: an owner-kept service, odometer and registration log per VIN.
+It warns when an odometer reading is lower than an earlier one and when a registration is expired or
+expires within 30 days, and it can copy the history as text or save and restore a backup file.
+Records are stored only in that browser (`localStorage`) and never uploaded. They are owner-entered
+and not verified, and the shared history text says so.
+
+It installs as a Home Screen app (Safari: Share → Add to Home Screen), using
+`manifest.webmanifest` and the icons in `icons/`. The page makes no requests except to NHTSA: the
+fonts are self-hosted in `fonts/` (Barlow Semi Condensed and B612 Mono, both under the SIL Open
+Font License, with license files alongside).
+
 ## What it pulls
 
 | Section | Source | Endpoint |
