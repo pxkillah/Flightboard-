@@ -56,6 +56,7 @@ test('builds a full report from all sources', async () => {
   const text = formatReport(r);
   assert.match(text, /2003 HONDA Accord EX-V6/);
   assert.match(text, /DO NOT DRIVE/);
+  assert.match(text, /Open Government Licence - Canada/, 'Transport Canada data carries its licence attribution');
 });
 
 test('one failing source does not sink the report', async () => {

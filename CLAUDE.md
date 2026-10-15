@@ -16,7 +16,7 @@ node bin/vehicle-report.js <VIN> [--json] [--force] [--no-ratings] [--no-complai
 node scripts/live-check.js                 # real NHTSA calls; also runs daily in GitHub Actions
 ```
 
-There is no linter or formatter configured. `.github/workflows/ci.yml` runs `npm test` on pushes to main and on pull requests. To try the web page, serve the repo root over HTTP (for example `python3 -m http.server`), because ES module imports don't load from `file://`. `?vin=<VIN>` runs a lookup on load. GitHub Pages serves `main` from the root.
+There is no linter or formatter configured. `.github/workflows/ci.yml` runs `npm test` on pushes to main and on pull requests. Work on a branch and open a pull request: GitHub Pages publishes `main` to visitors as soon as it changes. To try the web page, serve the repo root over HTTP (for example `python3 -m http.server`), because ES module imports don't load from `file://`. `?vin=<VIN>` runs a lookup on load. GitHub Pages serves `main` from the root.
 
 ## Architecture
 

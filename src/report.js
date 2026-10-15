@@ -75,6 +75,7 @@ export function formatReport(r) {
     }
   };
   recallBlock('Recalls (Transport Canada)', r.recallsCanada);
+  if (r.recallsCanada) L.push('  Contains information licensed under the Open Government Licence - Canada: https://open.canada.ca/en/open-government-licence-canada');
   recallBlock('Recalls (NHTSA, US)', r.recallsUS);
   if (r.complaints) {
     const c = r.complaints;
