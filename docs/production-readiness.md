@@ -4,7 +4,7 @@ Status of this app against every item in `PRODUCTION_STANDARD.md`. Update the ro
 
 Last full review: 2026-10-15.
 
-**160 items:** 57 met, 3 gaps, 29 need a person, 71 don't apply (each says why).
+**160 items:** 58 met, 2 gaps, 29 need a person, 71 don't apply (each says why).
 
 ## What the owner needs to do
 
@@ -49,7 +49,6 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 ## Open gaps
 
 - **OPS-05** Zero-downtime deploys
-- **TEST-02** Integration tests for every third-party API you depend on
 - **TEST-03** End-to-end tests for the flows that matter most (signup, checkout, the core task)
 
 ## Data and storage (DATA)
@@ -178,7 +177,7 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 | ID | Requirement | Status | Notes |
 |---|---|---|---|
 | TEST-01 | Unit tests written by someone who knows what the logic should do | Met | 56 offline tests cover every module in `src/`, including retries, error kinds, parsers, records rules and storage upgrades. They were written by the AI that wrote the code; PEOPLE-08 covers human review. |
-| TEST-02 | Integration tests for every third-party API you depend on | Gap | `scripts/live-check.js` checks every NHTSA endpoint against the sample VIN, daily and on every pull request that changes the code that talks to NHTSA (`.github/workflows/live-check.yml`). Offline tests cover the documented formats. Not yet passed against the real API: its first run is on the pull request that adds it. |
+| TEST-02 | Integration tests for every third-party API you depend on | Met | `scripts/live-check.js` checks every NHTSA endpoint against the sample VIN, daily and on every pull request that changes the code that talks to NHTSA (`.github/workflows/live-check.yml`). Offline tests cover the documented formats. First real run passed on PR #8 (2026-10-15): 24 recalls, 2,013 complaints, 4 rated versions. |
 | TEST-03 | End-to-end tests for the flows that matter most (signup, checkout, the core task) | Gap | No automated end-to-end test in the repo. The flows (lookup, add record, undo, backup, restore, CSV, feedback, remove, erase) were checked with Playwright scripts during development but not kept. Fix (medium): add Playwright tests to CI, which adds a dev dependency. |
 | TEST-04 | Load testing before the launch email goes out | N/A | Static files on a CDN; NHTSA's capacity isn't ours to test. |
 | TEST-05 | Test data that looks like production without being production data | Met | Tests use NHTSA's published sample VIN and minimal payloads in the documented formats. No real user data exists outside visitors' browsers. |
