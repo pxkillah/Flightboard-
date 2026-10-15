@@ -4,14 +4,12 @@ Status of this app against every item in `PRODUCTION_STANDARD.md`. Update the ro
 
 Last full review: 2026-10-15.
 
-**160 items:** 60 met, 2 gaps, 27 need a person, 71 don't apply (each says why).
+**160 items:** 62 met, 2 gaps, 25 need a person, 71 don't apply (each says why).
 
 ## What the owner needs to do
 
 These need a decision or a setting only the owner can change. The details are in each row.
 
-- **DATA-15** Currency, rounding and tax rules for every country you sell into
-- **DATA-16** A data model that survives the second customer's "one small change"
 - **AUTH-03** MFA, plus a recovery path for the user who lost their phone
 - **SEC-02** Every key that was ever pasted into a config file or chat has been rotated
 - **SEC-03** Every installed package confirmed to exist and to be the one you meant
@@ -23,7 +21,6 @@ These need a decision or a setting only the owner can change. The details are in
 - **OPS-18** A disaster recovery plan, written down and tested once a year
 - **OBS-04** Alerts that page a human, tuned until they stop paging for nothing
 - **OBS-07** An on-call rotation, and a person who picks up
-- **UX-09** Translations, with dates and numbers formatted for each locale
 
 ## Work that needs people
 
@@ -32,6 +29,7 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 - **OBS-09** Postmortems that change something
 - **TEST-07** Testing on the five-year-old laptop and the old phone real users still have
 - **TEST-08** Accessibility compliance (WCAG 2.1 AA)
+- **UX-09** Translations, with dates and numbers formatted for each locale
 - **CODE-02** Code review on every change
 - **CODE-14** A bus factor higher than one
 - **PEOPLE-01** Reading every line the AI wrote before it ships
@@ -53,7 +51,7 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 | ID | Requirement | Status | Notes |
 |---|---|---|---|
 | DATA-01 | A schema someone designed, not one improvised table by table | Met | One record shape, built by `makeRecord` (`src/records.js`) for the form, imports and saved data. Stored under one key as `{ version, vehicles: { [VIN]: { name, records[] } } }`. |
-| DATA-02 | Database migrations that run forward and roll back | Met | Saved data carries `version` (now 2). `readStore` upgrades version 1 (cost in dollars) and re-checks records; test: *saved data upgrades from version 1*. A newer version than the page knows is read but not written (decision 8). |
+| DATA-02 | Database migrations that run forward and roll back | Met | Saved data carries `version` (now 3). `readStore` upgrades version 1 (cost in dollars) and version 2 (readings in km only) and re-checks records; tests: *saved data upgrades from version 1*, *version 2 data upgrades to 3*. A newer version than the page knows is read but not written (decision 8). |
 | DATA-03 | Migrations that don't lock the main table during business hours | N/A | No database or server: one person's data in their own browser, upgraded in a few milliseconds on load. |
 | DATA-04 | Indexes for the queries real data volumes need (5 million rows, not 50) | Met | The only lookup is by VIN key. Measured: 500 records render in 0.2 s, 20,000 stored vehicles in 93 ms (desktop Chromium). |
 | DATA-05 | Connection pooling, so a traffic spike doesn't exhaust the database | N/A | No database or server; each browser and CLI process calls NHTSA directly. |
@@ -61,17 +59,17 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 | DATA-07 | Restores from those backups, tested | Met | Restore is tested (*a backup file restores what it saved*, *backup round trip…*) and was run in Chromium: save, clear storage, restore gave identical records. |
 | DATA-08 | Point-in-time recovery, for the delete without a WHERE clause | Met | Unreadable saved data is copied to `vin-report:v1:unreadable` before anything writes over it, and the page says so. Recovery steps are in `docs/runbook.md`. |
 | DATA-09 | Soft deletes, so an accidental delete is a support ticket and not an incident | Met | Deleting a record offers Undo for 8 seconds. Removing a vehicle or erasing all data asks for confirmation first. |
-| DATA-10 | Validation on the server, not just in the form | Met | Validation lives in `src/records.js`, not the form: real calendar dates, expiry on or after the registration date, km and cost as plain amounts within limits, only own record types, short string ids. Tests cover each rule. |
+| DATA-10 | Validation on the server, not just in the form | Met | Validation lives in `src/records.js`, not the form: real calendar dates, expiry on or after the registration date, odometer (km or mi) and cost as plain amounts within limits, known provinces and US states, only own record types, short string ids. Tests cover each rule. |
 | DATA-11 | Timezones stored correctly, so the 9am reminder doesn't fire at 4am | Met | Dates are local calendar dates from the device's time zone (`localDate`), compared as date strings; checked in Chromium with clocks in Auckland and Los Angeles. |
 | DATA-12 | Names with apostrophes work everywhere | Met | Apostrophes render, save, copy and back up correctly; all HTML output goes through `esc()`. |
 | DATA-13 | Emoji, accents and right-to-left text work in every field | Met | Text is cut by code points; record fields and names use `dir="auto"` and `<bdi>`, so Arabic and Hebrew display in the right order next to numbers; full-width and zero-width characters in a VIN are cleaned up. |
 | DATA-14 | Money stored as integers (0.1 + 0.2 ≠ 0.3 in floating point) | Met | Costs are stored as integer `costCents`, parsed from the digits; totals are exact (test: *costs are whole cents*). |
-| DATA-15 | Currency, rounding and tax rules for every country you sell into | Needs a person | Nothing is sold, so tax rules don't apply. French decimal commas (89,99) now parse correctly. **Owner decides:** are costs always Canadian dollars (then label the field "Cost (CAD)"), or does each record need a currency? |
-| DATA-16 | A data model that survives the second customer's "one small change" | Needs a person | Records assume Canada: kilometres, provinces, dollars. **Owner decides:** is My records Canada-only? If not, add per-vehicle units and currency with a version-3 migration (decision 8). |
+| DATA-15 | Currency, rounding and tax rules for every country you sell into | Met | Nothing is sold, so tax rules don't apply. Owner decided (2026-10-15): costs are Canadian dollars (decision 9). The form, CSV header and shared history say so; amounts are integer cents, and 89.99 and 89,99 parse the same. |
+| DATA-16 | A data model that survives the second customer's "one small change" | Met | Owner decided (2026-10-15) to plan for US vehicles too. Each odometer reading keeps its own unit (km or mi), so a car that crosses the border keeps its history; rollback checks compare in km. The region list has US states (`US-XX`). Costs stay in Canadian dollars by decision. Saved data is version 3; older data upgrades on load (decision 10). |
 | DATA-17 | Idempotency keys, so a retried payment doesn't charge twice | Met | No payments; every network call is a GET that's safe to retry. Restoring the same backup twice adds nothing, including records without ids, which get a content id (test: *imports: ids, duplicates and re-imports*). |
 | DATA-18 | Deduplication for the user who clicks submit four times | Met | Repeat taps on Check while a VIN is loading are ignored and don't add history entries (verified: 4 taps, 1 lookup). The record form closes on the first submit. |
 | DATA-19 | Pagination that still works on page 400 | Met | Your vehicles lists every vehicle with records plus the 6 latest lookups. The timeline isn't paged; fine to about 2,000 records (1.3 s). Revisit if logs grow past that. |
-| DATA-20 | Exports, because every customer eventually wants a spreadsheet | Met | Export CSV per vehicle (quoted, BOM for Excel, formula-safe), backup files (JSON) and copy as text. The CLI has `--json`. |
+| DATA-20 | Exports, because every customer eventually wants a spreadsheet | Met | Export CSV per vehicle (quoted, BOM for Excel, formula-safe; in French with semicolons and decimal commas, as French Excel expects), backup files (JSON) and copy as text. The CLI has `--json`. |
 | DATA-21 | Imports that survive the CSV someone saved in 2009 | Met | Restore normalizes VIN keys, handles BOMs, keeps both records when two share an id, says how many were skipped, explains a non-backup file, refuses future versions and files over 5 MB. Tests cover each. |
 | DATA-22 | Retention rules, and code that deletes what the contract says you'll delete | Met | Stated in the README and footer: records and checked VINs stay on the device until removed. Remove a vehicle on its page; erase everything from the footer. Lookups without records are pruned beyond the latest 50. |
 | DATA-23 | Storage rules, so you stop paying to keep old temp files | Met | The backup download URL is revoked after use; old lookups are pruned; a full quota gets its own message. |
@@ -127,7 +125,7 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 | COMP-06 | GDPR deletion requests that reach every table, backup and log | Met | Everything the app keeps is on the visitor's device and deletable there (Remove from this device; Erase all in the footer). Feedback issues are public on GitHub; the owner deletes one on request (contact: see COMP-09). |
 | COMP-07 | Data residency for the customer whose contract says EU only | N/A | No server-side storage or contracts. What leaves the device goes to NHTSA (US) and GitHub by design. |
 | COMP-08 | Quarterly access reviews that someone signs off on | Needs a person | Production access is merging to `main` (now only through a pull request with passing tests): the owner (sole admin) and Claude sessions using the owner's GitHub connection. **Owner:** once a quarter, review collaborators, GitHub Apps and OAuth apps (including Claude), deploy keys and tokens, and the "Protect main" ruleset; note the date and outcome here. |
-| COMP-09 | Terms and a privacy policy that match what the code actually does | Needs a person | The README now has a Privacy section and the footer says what goes to NHTSA and what stays on the device; the CLI credits Transport Canada's Open Government Licence. **Owner decides:** the copyright holder for a `LICENSE` file (`package.json` says MIT but there's no LICENSE, so the code isn't actually licensed), and a private contact for privacy requests (issues are public). |
+| COMP-09 | Terms and a privacy policy that match what the code actually does | Needs a person | The README has a Privacy section and the footer says what goes to NHTSA and what stays on the device; the CLI credits Transport Canada's Open Government Licence. `LICENSE` added: MIT, copyright pxkillah (owner's choice, 2026-10-15). **Owner decides:** a private contact for privacy requests (issues are public), for example an email address listed in the README. |
 | COMP-10 | Every account, domain and repo in the company's name, not the prototype builder's | Needs a person | The repo, site and feedback destination belong to the personal account pxkillah (no custom domain). **Owner decides:** keep it personal and say so here, or move to an organisation and a custom domain before the link spreads. Moving strands saved records unless visitors back up and restore. |
 
 ## Infrastructure and delivery (OPS)
@@ -173,14 +171,14 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 
 | ID | Requirement | Status | Notes |
 |---|---|---|---|
-| TEST-01 | Unit tests written by someone who knows what the logic should do | Met | 56 offline tests cover every module in `src/`, including retries, error kinds, parsers, records rules and storage upgrades. They were written by the AI that wrote the code; PEOPLE-08 covers human review. |
+| TEST-01 | Unit tests written by someone who knows what the logic should do | Met | 69 offline tests cover every module in `src/`, including retries, error kinds, parsers, records rules, storage upgrades, units, and English/French message parity. They were written by the AI that wrote the code; PEOPLE-08 covers human review. |
 | TEST-02 | Integration tests for every third-party API you depend on | Met | `scripts/live-check.js` checks every NHTSA endpoint against the sample VIN, daily and on every pull request that changes the code that talks to NHTSA (`.github/workflows/live-check.yml`). Offline tests cover the documented formats. First real run passed on PR #8 (2026-10-15): 24 recalls, 2,013 complaints, 4 rated versions. |
 | TEST-03 | End-to-end tests for the flows that matter most (signup, checkout, the core task) | Gap | No automated end-to-end test in the repo. The flows (lookup, add record, undo, backup, restore, CSV, feedback, remove, erase) were checked with Playwright scripts during development but not kept. Fix (medium): add Playwright tests to CI, which adds a dev dependency. |
 | TEST-04 | Load testing before the launch email goes out | N/A | Static files on a CDN; NHTSA's capacity isn't ours to test. |
 | TEST-05 | Test data that looks like production without being production data | Met | Tests use NHTSA's published sample VIN and minimal payloads in the documented formats. No real user data exists outside visitors' browsers. |
 | TEST-06 | Regression tests, so fixing bug 41 doesn't bring back bug 12 | Met | Each bug fixed in this pass has a test that fails on the old code (checked by running the new tests against it). |
 | TEST-07 | Testing on the five-year-old laptop and the old phone real users still have | Needs a person | Fixed: every lookup failed on Safari before 16 (iOS 15). **Still needed:** try the page on a real older iPhone (iOS 15 or 16) and an older Android phone. |
-| TEST-08 | Accessibility compliance (WCAG 2.1 AA) | Needs a person | axe-core finds no WCAG 2.1 A or AA violations on the home page, a report and both forms, in light and dark mode (2026-10-15). Automated checks catch only part. **Needed:** one pass with VoiceOver or TalkBack by a person. |
+| TEST-08 | Accessibility compliance (WCAG 2.1 AA) | Needs a person | axe-core finds no WCAG 2.1 A or AA violations on the home page, a report and both forms, in English and French, light and dark, at 390 and 320 px wide (2026-10-15). Nothing spills sideways at 320 px. Automated checks catch only part. Known limit: with the phone's text size at 150%, the complaint figures and records panel still get wider than the screen. **Needed:** one pass with VoiceOver or TalkBack by a person. |
 
 ## Billing (BILL)
 
@@ -233,7 +231,7 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 | UX-06 | Notifications people can turn off | N/A | Sends no notifications. |
 | UX-07 | Undo | Met | Undo after deleting a record; confirmation before removing a vehicle or erasing all data. |
 | UX-08 | Keyboard navigation and screen reader support | Met | Every control is reachable by keyboard; forms are native modal dialogs; the mileage chart has an arrow-key readout. A screen-reader pass is TEST-08. |
-| UX-09 | Translations, with dates and numbers formatted for each locale | Needs a person | English only, Canadian formatting. **Owner decides:** add French (likely for Quebec visitors)? |
+| UX-09 | Translations, with dates and numbers formatted for each locale | Needs a person | English and French (Canada): every page string, dates (15 oct. 2026, 1er), numbers and money (89,99 $), km or mi, province and state names, CSV and shared history. Language follows the device, with a switch that's remembered; `?lang=fr` works. NHTSA's own text stays in English and is marked `lang="en"`. Tests check both languages have every key and placeholder. **Needed:** a fluent Quebec French speaker to review the wording; it was translated by the AI that wrote the code. |
 | UX-10 | A back button that does what people expect | Met | Back closes an open form instead of leaving the page behind it; lookups don't add duplicate history entries; `?vin=` links work. |
 
 ## Code, docs and team (CODE)
@@ -260,7 +258,7 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 | ID | Requirement | Status | Notes |
 |---|---|---|---|
 | PEOPLE-01 | Reading every line the AI wrote before it ships | Needs a person | Today no one but the AI reads the code before it ships. Needed: a senior engineer reviewing PRs. |
-| PEOPLE-02 | Designing the data model before the second customer breaks it | Needs a person | No database, but the records model has open decisions (DATA-15, DATA-16) worth a backend engineer's review. |
+| PEOPLE-02 | Designing the data model before the second customer breaks it | Needs a person | No database. The records model's open decisions (DATA-15, DATA-16) are made and built (decisions 9 and 10); a backend engineer's review of it is still worth having. |
 | PEOPLE-03 | Explaining why the AI's fix for one bug created two new ones | Needs a person | Same reviewer as PEOPLE-01. |
 | PEOPLE-04 | Deploys, rollbacks, servers and the cloud bill | N/A | No servers or cloud bill; deploys are merges to `main`. |
 | PEOPLE-05 | Answering the page at 3am when payments stop | N/A | No payments and no uptime promise. |

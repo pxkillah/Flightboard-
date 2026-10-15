@@ -4,6 +4,14 @@ Changes people using VIN Report would notice. Newest first.
 
 ## Unreleased
 
+- **En français.** The whole page is available in French (Canada), following your device's
+  language, with a switch on the home page and in the footer.
+- **Miles or kilometres.** Each odometer reading can be in km or mi; the rollback warning
+  compares them correctly.
+- **US states** can be chosen for a registration, alongside Canadian provinces.
+- Costs are labelled as Canadian dollars.
+- The VIN strip, tiles and panel headings fit on 320 px wide phones.
+- The code is now licensed under MIT (`LICENSE`).
 - **Never shows a failed or changed answer as "no recalls."** If NHTSA is down or changes how
   it sends data, the report says it couldn't load that part, instead of showing none.
 - **Clearer errors.** When NHTSA isn't responding, the page says so and no longer suggests the

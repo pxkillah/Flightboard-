@@ -54,11 +54,11 @@
 <header class="topbar" id="topbar">
   <div class="wrap">
     <form class="topbar-row" id="search-form" role="search" autocomplete="off" novalidate>
-      <button type="button" class="logo" id="logo" aria-label="VIN Report home"></button>
+      <button type="button" class="logo" id="logo" data-i18n-attr="aria-label:search.home" aria-label="VIN Report home"></button>
       <div class="search">
-        <input id="vin" name="vin" maxlength="24" placeholder="Enter a VIN" aria-label="VIN, 17 characters" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="search">
+        <input id="vin" name="vin" maxlength="24" data-i18n-attr="placeholder:search.placeholder,aria-label:search.label" placeholder="Enter a VIN" aria-label="VIN, 17 characters" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="search">
         <span class="count" id="vin-count" aria-hidden="true">0/17</span>
-        <button class="btn primary go" id="go" aria-label="Check this VIN"><svg class="ic" aria-hidden="true"><use href="#i-search"></use></svg><span class="go-label">Check</span></button>
+        <button class="btn primary go" id="go" data-i18n-attr="aria-label:search.checkAria" aria-label="Check this VIN"><svg class="ic" aria-hidden="true"><use href="#i-search"></use></svg><span class="go-label" data-i18n="search.check">Check</span></button>
       </div>
     </form>
     <p class="search-msg" id="search-msg" role="alert" hidden></p>
@@ -68,30 +68,33 @@
 <main>
   <div class="wrap home" id="home">
     <section class="hero">
-      <h1>Check any vehicle by its VIN</h1>
-      <p class="lede">Recalls, owner complaints and crash-test ratings from NHTSA, plus a logbook for your own service, odometer and registration records.</p>
-      <button type="button" class="btn secondary" data-example>See an example report</button>
+      <h1 data-i18n="home.title">Check any vehicle by its VIN</h1>
+      <p class="lede" data-i18n="home.lede">Recalls, owner complaints and crash-test ratings from NHTSA, plus a logbook for your own service, odometer and registration records.</p>
+      <div class="hero-actions">
+        <button type="button" class="btn secondary" data-example data-i18n="home.example">See an example report</button>
+        <button type="button" class="link-btn lang-btn" data-lang-toggle lang="fr" aria-label="Afficher en français">Français</button>
+      </div>
     </section>
 
     <section id="recent-block" hidden>
-      <h2 class="section-label">Your vehicles</h2>
+      <h2 class="section-label" data-i18n="home.yours">Your vehicles</h2>
       <ul class="vehicles" id="recent-list"></ul>
     </section>
 
     <section>
-      <h2 class="section-label">Where to find the VIN</h2>
+      <h2 class="section-label" data-i18n="home.where">Where to find the VIN</h2>
       <ul class="spots">
-        <li class="spot"><svg class="ic" aria-hidden="true"><use href="#i-windshield"></use></svg><b>Dashboard</b><span>Look through the windshield at the bottom corner on the driver's side.</span></li>
-        <li class="spot"><svg class="ic" aria-hidden="true"><use href="#i-door"></use></svg><b>Driver's door frame</b><span>On the sticker where the door latches.</span></li>
-        <li class="spot"><svg class="ic" aria-hidden="true"><use href="#i-doc"></use></svg><b>Registration</b><span>Printed on your vehicle permit or ownership.</span></li>
-        <li class="spot"><svg class="ic" aria-hidden="true"><use href="#i-card"></use></svg><b>Insurance card</b><span>Your pink slip lists the VIN for each vehicle.</span></li>
+        <li class="spot"><svg class="ic" aria-hidden="true"><use href="#i-windshield"></use></svg><b data-i18n="spot.dash">Dashboard</b><span data-i18n="spot.dashText">Look through the windshield at the bottom corner on the driver's side.</span></li>
+        <li class="spot"><svg class="ic" aria-hidden="true"><use href="#i-door"></use></svg><b data-i18n="spot.door">Driver's door frame</b><span data-i18n="spot.doorText">On the sticker where the door latches.</span></li>
+        <li class="spot"><svg class="ic" aria-hidden="true"><use href="#i-doc"></use></svg><b data-i18n="spot.reg">Registration</b><span data-i18n="spot.regText">Printed on your vehicle permit or ownership.</span></li>
+        <li class="spot"><svg class="ic" aria-hidden="true"><use href="#i-card"></use></svg><b data-i18n="spot.ins">Insurance card</b><span data-i18n="spot.insText">Your pink slip lists the VIN for each vehicle.</span></li>
       </ul>
-      <p class="fine spots-note">A VIN has 17 characters and never uses the letters I, O or Q.</p>
+      <p class="fine spots-note" data-i18n="home.vinNote">A VIN has 17 characters and never uses the letters I, O or Q.</p>
     </section>
 
     <section class="limits">
-      <h2>What this report can't show</h2>
-      <p>Accident, lien and past-owner records come from paid sources such as Carfax Canada, ICBC in BC, or a provincial lien search. They aren't available here. You can keep your own service, odometer and registration history in <b>My records</b>.</p>
+      <h2 data-i18n="home.limitsTitle">What this report can't show</h2>
+      <p data-i18n-html="home.limitsText">Accident, lien and past-owner records come from paid sources such as Carfax Canada, ICBC in BC, or a provincial lien search. They aren't available here. You can keep your own service, odometer and registration history in <b>My records</b>.</p>
     </section>
   </div>
 
@@ -99,65 +102,56 @@
 </main>
 
 <footer class="wrap site-foot">
-  <p>Vehicle details, U.S. recalls, owner complaints and crash ratings come from NHTSA, which receives the VIN you enter. Recalls are listed by model, so confirm what applies to a specific vehicle with a dealer. Not affiliated with NHTSA, Transport Canada or Carfax.</p>
-  <p>Your records and the VINs you check are saved on this device only. <button type="button" class="link-btn" data-act="erase">Erase all VIN Report data on this device</button></p>
-  <p><a href="https://github.com/pxkillah/Flightboard-" target="_blank" rel="noopener">Source code and data notes</a></p>
-  <button type="button" class="btn secondary small" id="feedback-btn"><svg class="ic" aria-hidden="true"><use href="#i-chat"></use></svg>Send feedback</button>
+  <p data-i18n="foot.data">Vehicle details, U.S. recalls, owner complaints and crash ratings come from NHTSA, which receives the VIN you enter. Recalls are listed by model, so confirm what applies to a specific vehicle with a dealer. Not affiliated with NHTSA, Transport Canada or Carfax.</p>
+  <p><span data-i18n="foot.stored">Your records and the VINs you check are saved on this device only.</span> <button type="button" class="link-btn" data-act="erase" data-i18n="foot.erase">Erase all VIN Report data on this device</button></p>
+  <p><a href="https://github.com/pxkillah/Flightboard-" target="_blank" rel="noopener" data-i18n="foot.source">Source code and data notes</a> · <button type="button" class="link-btn lang-btn" data-lang-toggle lang="fr" aria-label="Afficher en français">Français</button></p>
+  <button type="button" class="btn secondary small" id="feedback-btn"><svg class="ic" aria-hidden="true"><use href="#i-chat"></use></svg><span data-i18n="foot.feedback">Send feedback</span></button>
 </footer>
 
 <dialog class="sheet" id="sheet" aria-labelledby="sheet-title">
   <form id="rec-form" novalidate>
     <div class="grabber" aria-hidden="true"></div>
     <div class="sheet-head">
-      <h2 id="sheet-title">Add a record</h2>
-      <button type="button" class="icon-btn" data-close aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"></use></svg></button>
+      <h2 id="sheet-title" data-i18n="sheet.title">Add a record</h2>
+      <button type="button" class="icon-btn" data-close data-i18n-attr="aria-label:common.close" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"></use></svg></button>
     </div>
     <fieldset class="segmented">
-      <legend class="sr">Record type</legend>
-      <label><input type="radio" name="type" value="service" id="t-service" checked><span><svg class="ic" aria-hidden="true"><use href="#i-wrench"></use></svg>Service</span></label>
-      <label><input type="radio" name="type" value="mileage" id="t-mileage"><span><svg class="ic" aria-hidden="true"><use href="#i-gauge"></use></svg>Odometer</span></label>
-      <label><input type="radio" name="type" value="registration" id="t-registration"><span><svg class="ic" aria-hidden="true"><use href="#i-plate"></use></svg>Registration</span></label>
+      <legend class="sr" data-i18n="sheet.typeLegend">Record type</legend>
+      <label><input type="radio" name="type" value="service" id="t-service" checked><span><svg class="ic" aria-hidden="true"><use href="#i-wrench"></use></svg><span data-i18n="type.service">Service</span></span></label>
+      <label><input type="radio" name="type" value="mileage" id="t-mileage"><span><svg class="ic" aria-hidden="true"><use href="#i-gauge"></use></svg><span data-i18n="type.mileage">Odometer</span></span></label>
+      <label><input type="radio" name="type" value="registration" id="t-registration"><span><svg class="ic" aria-hidden="true"><use href="#i-plate"></use></svg><span data-i18n="type.registration">Registration</span></span></label>
     </fieldset>
     <div class="field-row">
-      <label class="field"><span class="field-label">Date</span><input type="date" name="date" id="f-date"></label>
-      <label class="field"><span class="field-label">Odometer <em id="km-optional">(optional)</em></span><span class="affix has-suf"><input name="km" id="f-km" inputmode="numeric" placeholder="74,200"><span class="suf">km</span></span></label>
+      <label class="field"><span class="field-label" data-i18n="sheet.date">Date</span><input type="date" name="date" id="f-date"></label>
+      <div class="field"><label class="field-label" for="f-odometer"><span data-i18n="sheet.odometer">Odometer</span> <em id="odo-optional" data-i18n="common.optional">(optional)</em></label><span class="affix has-unit"><input name="odometer" id="f-odometer" inputmode="numeric" data-i18n-attr="placeholder:sheet.odoPh" placeholder="74,200"><select name="unit" id="f-unit" class="unit-select" data-i18n-attr="aria-label:sheet.unit" aria-label="Unit"><option value="km">km</option><option value="mi">mi</option></select></span></div>
     </div>
     <div class="type-fields" data-for="service">
-      <label class="field"><span class="field-label">Work done</span><input name="work" id="f-work" dir="auto" placeholder="Oil change, brakes, tires…"></label>
-      <div class="quick" aria-label="Common services">
-        <button type="button" data-work="Oil change">Oil change</button>
-        <button type="button" data-work="Tire change">Tire change</button>
-        <button type="button" data-work="Brakes">Brakes</button>
-        <button type="button" data-work="Inspection">Inspection</button>
-        <button type="button" data-work="Battery">Battery</button>
-        <button type="button" data-work="Recall repair">Recall repair</button>
+      <label class="field"><span class="field-label" data-i18n="sheet.work">Work done</span><input name="work" id="f-work" dir="auto" data-i18n-attr="placeholder:sheet.workPh" placeholder="Oil change, brakes, tires…"></label>
+      <div class="quick" data-i18n-attr="aria-label:sheet.quick" aria-label="Common services">
+        <button type="button" data-work-key="quick.oil" data-work="Oil change">Oil change</button>
+        <button type="button" data-work-key="quick.tires" data-work="Tire change">Tire change</button>
+        <button type="button" data-work-key="quick.brakes" data-work="Brakes">Brakes</button>
+        <button type="button" data-work-key="quick.inspection" data-work="Inspection">Inspection</button>
+        <button type="button" data-work-key="quick.battery" data-work="Battery">Battery</button>
+        <button type="button" data-work-key="quick.recall" data-work="Recall repair">Recall repair</button>
       </div>
       <div class="field-row">
-        <label class="field"><span class="field-label">Shop</span><input name="shop" id="f-shop" dir="auto" placeholder="Ford dealer"></label>
-        <label class="field"><span class="field-label">Cost (CAD)</span><span class="affix has-pre"><span class="pre">$</span><input name="cost" id="f-cost" inputmode="decimal" placeholder="0.00"></span></label>
+        <label class="field"><span class="field-label" data-i18n="sheet.shop">Shop</span><input name="shop" id="f-shop" dir="auto" data-i18n-attr="placeholder:sheet.shopPh" placeholder="Ford dealer"></label>
+        <label class="field"><span class="field-label" data-i18n="sheet.cost">Cost (CAD)</span><span class="affix has-pre"><span class="pre">$</span><input name="cost" id="f-cost" inputmode="decimal" data-i18n-attr="placeholder:sheet.costPh" placeholder="0.00"></span></label>
       </div>
     </div>
     <div class="type-fields" data-for="registration" hidden>
       <div class="field-row">
-        <label class="field"><span class="field-label">Province or territory</span>
-          <select name="province" id="f-province">
-            <option value="">Choose…</option>
-            <option value="AB">Alberta</option><option value="BC">British Columbia</option><option value="MB">Manitoba</option>
-            <option value="NB">New Brunswick</option><option value="NL">Newfoundland and Labrador</option><option value="NS">Nova Scotia</option>
-            <option value="NT">Northwest Territories</option><option value="NU">Nunavut</option><option value="ON">Ontario</option>
-            <option value="PE">Prince Edward Island</option><option value="QC">Quebec</option><option value="SK">Saskatchewan</option>
-            <option value="YT">Yukon</option><option value="Outside Canada">Outside Canada</option>
-          </select>
-        </label>
-        <label class="field"><span class="field-label">Plate</span><input name="plate" id="f-plate" dir="auto" autocapitalize="characters" placeholder="ABCD 123"></label>
+        <label class="field"><span class="field-label" data-i18n="sheet.region">Province, territory or state</span><select name="province" id="f-province"></select></label>
+        <label class="field"><span class="field-label" data-i18n="sheet.plate">Plate</span><input name="plate" id="f-plate" dir="auto" autocapitalize="characters" placeholder="ABCD 123"></label>
       </div>
-      <label class="field"><span class="field-label">Expires</span><input type="date" name="expiry" id="f-expiry"></label>
+      <label class="field"><span class="field-label" data-i18n="sheet.expires">Expires</span><input type="date" name="expiry" id="f-expiry"></label>
     </div>
-    <label class="field"><span class="field-label">Notes <em>(optional)</em></span><textarea name="notes" id="f-notes" dir="auto" rows="2"></textarea></label>
+    <label class="field"><span class="field-label"><span data-i18n="sheet.notes">Notes</span> <em data-i18n="common.optional">(optional)</em></span><textarea name="notes" id="f-notes" dir="auto" rows="2"></textarea></label>
     <p class="form-error" id="rec-err" role="alert" hidden></p>
     <div class="sheet-actions">
-      <button type="button" class="btn ghost" data-close>Cancel</button>
-      <button type="submit" class="btn primary">Save record</button>
+      <button type="button" class="btn ghost" data-close data-i18n="common.cancel">Cancel</button>
+      <button type="submit" class="btn primary" data-i18n="sheet.save">Save record</button>
     </div>
   </form>
 </dialog>
@@ -166,22 +160,22 @@
   <form id="fb-form" novalidate>
     <div class="grabber" aria-hidden="true"></div>
     <div class="sheet-head">
-      <h2 id="fb-title">Send feedback</h2>
-      <button type="button" class="icon-btn" data-close aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"></use></svg></button>
+      <h2 id="fb-title" data-i18n="fb.title">Send feedback</h2>
+      <button type="button" class="icon-btn" data-close data-i18n-attr="aria-label:common.close" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"></use></svg></button>
     </div>
     <fieldset class="segmented">
-      <legend class="sr">Feedback type</legend>
-      <label><input type="radio" name="kind" value="problem" checked><span><svg class="ic" aria-hidden="true"><use href="#i-alert"></use></svg>Problem</span></label>
-      <label><input type="radio" name="kind" value="idea"><span><svg class="ic" aria-hidden="true"><use href="#i-star"></use></svg>Idea</span></label>
-      <label><input type="radio" name="kind" value="data"><span><svg class="ic" aria-hidden="true"><use href="#i-info"></use></svg>Wrong data</span></label>
+      <legend class="sr" data-i18n="fb.legend">Feedback type</legend>
+      <label><input type="radio" name="kind" value="problem" checked><span><svg class="ic" aria-hidden="true"><use href="#i-alert"></use></svg><span data-i18n="fb.problem">Problem</span></span></label>
+      <label><input type="radio" name="kind" value="idea"><span><svg class="ic" aria-hidden="true"><use href="#i-star"></use></svg><span data-i18n="fb.idea">Idea</span></span></label>
+      <label><input type="radio" name="kind" value="data"><span><svg class="ic" aria-hidden="true"><use href="#i-info"></use></svg><span data-i18n="fb.data">Wrong data</span></span></label>
     </fieldset>
-    <label class="field"><span class="field-label">Your feedback</span><textarea name="message" id="fb-message" dir="auto" rows="5" maxlength="1500" placeholder="What happened, or what would make this better?"></textarea></label>
-    <label class="check" id="fb-vin-row" hidden><input type="checkbox" name="includeVin" id="fb-vin"><span>Include the VIN <b id="fb-vin-text"></b></span></label>
-    <p class="sheet-note">This opens a pre-filled issue on GitHub, where you can review it before posting. Posting needs a free GitHub account, and issues there are public.</p>
+    <label class="field"><span class="field-label" data-i18n="fb.message">Your feedback</span><textarea name="message" id="fb-message" dir="auto" rows="5" maxlength="1500" data-i18n-attr="placeholder:fb.placeholder" placeholder="What happened, or what would make this better?"></textarea></label>
+    <label class="check" id="fb-vin-row" hidden><input type="checkbox" name="includeVin" id="fb-vin"><span><span data-i18n="fb.includeVin">Include the VIN</span> <b id="fb-vin-text"></b></span></label>
+    <p class="sheet-note" data-i18n="fb.note">This opens a pre-filled issue on GitHub, where you can review it before posting. Posting needs a free GitHub account, and issues there are public.</p>
     <p class="form-error" id="fb-err" role="alert" hidden></p>
     <div class="sheet-actions">
-      <button type="button" class="btn ghost" data-close>Cancel</button>
-      <button type="submit" class="btn primary"><svg class="ic" aria-hidden="true"><use href="#i-external"></use></svg>Continue on GitHub</button>
+      <button type="button" class="btn ghost" data-close data-i18n="common.cancel">Cancel</button>
+      <button type="submit" class="btn primary"><svg class="ic" aria-hidden="true"><use href="#i-external"></use></svg><span data-i18n="fb.continue">Continue on GitHub</span></button>
     </div>
   </form>
 </dialog>

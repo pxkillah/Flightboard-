@@ -9,7 +9,7 @@ import { errorKind } from './http.js';
 // one slow or down API doesn't sink the whole report. errors[section] holds the technical
 // message and errorKinds[section] what kind of failure it was (see errorKind in http.js);
 // a VIN that decodes without a make, model and year is kind 'unrecognized'.
-export async function buildReport(input, { fetch, include = {}, force = false } = {}) {
+export async function buildReport(input, { fetch, include = {}, force = false, lang = 'en' } = {}) {
   const opts = fetch ? { fetch } : {};
   const check = validateVin(input);
   const report = { vin: check.vin, vinCheck: check, generatedAt: new Date().toISOString(), errors: {}, errorKinds: {} };
@@ -45,7 +45,7 @@ export async function buildReport(input, { fetch, include = {}, force = false } 
     }
   }));
   for (const key of ['recallsUS', 'recallsCanada']) {
-    report[key]?.forEach((r) => { r.mismatch = recallMismatch(r, v); });
+    report[key]?.forEach((r) => { r.mismatch = recallMismatch(r, v, { lang }); });
   }
   return report;
 }
