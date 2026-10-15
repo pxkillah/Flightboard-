@@ -11,8 +11,10 @@ export const KINDS = {
 };
 
 export const MAX_MESSAGE = 1500;
-// GitHub rejects very long URLs; stay well below its limit.
-const MAX_URL = 7500;
+// A signed-out visitor is redirected to /login?return_to=<this URL, encoded again>. GitHub
+// drops return_to once that gets near 7.7K characters, and the pre-filled issue is lost.
+// Non-Latin text is encoded twice over, so it hits this long before MAX_MESSAGE does.
+const MAX_RETURN_TO = 6000;
 
 // Returns { url, errors[] }. The VIN is included only when given and well formed, so the
 // caller decides (with the user's consent) whether to pass it. The check digit isn't
@@ -26,8 +28,9 @@ export function feedbackUrl({ kind, message, vin } = {}, { repo = FEEDBACK_REPO 
   else if (text.length > MAX_MESSAGE) errors.push(`Keep it under ${MAX_MESSAGE.toLocaleString('en-CA')} characters.`);
   if (errors.length) return { url: null, errors };
 
-  const first = text.split('\n')[0].replace(/\s+/g, ' ').trim();
-  const summary = first.length > 60 ? `${first.slice(0, 59).trimEnd()}…` : first;
+  // Count code points, not UTF-16 units, so the cut never splits an emoji.
+  const first = [...text.split('\n')[0].replace(/\s+/g, ' ').trim()];
+  const summary = first.length > 60 ? `${first.slice(0, 59).join('').trimEnd()}…` : first.join('');
   const title = `[${KINDS[k].tag}] ${summary}`;
 
   const v = normalizeVin(vin);
@@ -40,6 +43,6 @@ export function feedbackUrl({ kind, message, vin } = {}, { repo = FEEDBACK_REPO 
   ].filter((l) => l !== null).join('\n');
 
   const url = `https://github.com/${repo}/issues/new?${new URLSearchParams({ title, body })}`;
-  if (url.length > MAX_URL) return { url: null, errors: ['This feedback is too long to send. Please shorten it.'] };
+  if (encodeURIComponent(url).length > MAX_RETURN_TO) return { url: null, errors: ['This feedback is too long to send. Please shorten it.'] };
   return { url, errors: [] };
 }

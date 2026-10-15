@@ -1160,28 +1160,36 @@ form.addEventListener('submit', (e) => {
 // ---------- Feedback sheet ----------
 const fbSheet = $('#fb-sheet');
 const fbForm = $('#fb-form');
+// The VIN named in the checkbox label. Kept here because current.vin can change while the
+// sheet is open (for example on Back), and only the VIN the user saw may be sent.
+let fbVin = null;
+let fbPressOnBackdrop = false;
 function openFeedback() {
-  fbForm.reset();
   $('#fb-err').hidden = true;
   // Offer the VIN only while a report is showing, and leave it unticked: issues are public.
-  const vin = $('#report').hidden ? null : current.vin;
-  $('#fb-vin-row').hidden = !vin;
-  $('#fb-vin-text').textContent = vin ?? '';
+  fbVin = $('#report').hidden ? null : current.vin;
+  $('#fb-vin-row').hidden = !fbVin;
+  $('#fb-vin-text').textContent = fbVin ?? '';
+  fbForm.elements.includeVin.checked = false;
   if (typeof fbSheet.showModal === 'function') fbSheet.showModal(); else fbSheet.setAttribute('open', '');
   $('#fb-message').focus();
 }
 function closeFeedback() { if (typeof fbSheet.close === 'function') fbSheet.close(); else fbSheet.removeAttribute('open'); }
 $('#feedback-btn').addEventListener('click', openFeedback);
-fbSheet.addEventListener('click', (e) => { if (e.target === fbSheet) closeFeedback(); });
+// A drag that starts in the textarea and ends on the backdrop also clicks the dialog; only
+// a press that starts on the backdrop closes it. The draft is kept until it is sent.
+fbSheet.addEventListener('pointerdown', (e) => { fbPressOnBackdrop = e.target === fbSheet; });
+fbSheet.addEventListener('click', (e) => { if (e.target === fbSheet && fbPressOnBackdrop) closeFeedback(); });
 fbForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const err = $('#fb-err');
   const f = fbForm.elements;
-  const vin = !$('#fb-vin-row').hidden && f.includeVin.checked ? current.vin : undefined;
+  const vin = fbVin && f.includeVin.checked ? fbVin : undefined;
   const { url, errors } = feedbackUrl({ kind: f.kind.value, message: f.message.value, vin });
   if (errors.length) { err.textContent = errors.join(' '); err.hidden = false; return; }
   window.open(url, '_blank', 'noopener');
   closeFeedback();
+  fbForm.reset();
   toast('Opened GitHub in a new tab');
 });
 

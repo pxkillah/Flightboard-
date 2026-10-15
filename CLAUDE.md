@@ -19,7 +19,7 @@ There is no linter or formatter configured. To try the web page, serve the repo 
 
 ## Architecture
 
-The same modules in `src/` run in both Node and the browser. `index.html` imports them directly with `<script type="module">` (`./src/report.js`, `./src/vin.js`, `./src/records.js`), so `src/` must stay browser-compatible: no Node built-ins, no bare package imports.
+The same modules in `src/` run in both Node and the browser. `index.html` imports them directly with `<script type="module">` (`./src/report.js`, `./src/vin.js`, `./src/records.js`, `./src/feedback.js`), so `src/` must stay browser-compatible: no Node built-ins, no bare package imports.
 
 - `src/report.js`: `buildReport(vin, { fetch, include, force })` validates the VIN, decodes it with vPIC (which supplies year, make and model), then fetches each section in parallel. **Each section fails on its own**: an error goes into `report.errors[section]` and does not fail the whole report. `include.<section> === false` skips a section. `formatReport` renders the CLI text.
 - `src/sources/*.js`: one module per API. Each exposes pure `parse*` functions, which the tests exercise, alongside fetch wrappers.
