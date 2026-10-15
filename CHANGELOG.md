@@ -4,6 +4,14 @@ Changes people using VIN Report would notice. Newest first.
 
 ## Unreleased
 
+- **Car Report for iPhone and Android.** The page is now also a phone app, with:
+  - a scan button that reads the VIN barcode on the door frame or windshield;
+  - backups and spreadsheets that open the share sheet (Files, AirDrop, email…);
+  - saved records that survive iOS clearing the app's web storage.
+- The app is now called **Car Report**.
+- Send feedback opens an email instead of a GitHub issue.
+- A privacy policy page, in English and French, linked from the footer.
+
 - **En français.** The whole page is available in French (Canada), following your device's
   language, with a switch on the home page and in the footer.
 - **Miles or kilometres.** Each odometer reading can be in km or mi; the rollback warning

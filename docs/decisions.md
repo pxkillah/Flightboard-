@@ -46,6 +46,8 @@ Send feedback opens a pre-filled GitHub issue rather than posting from the page,
 decision 3. Posting needs a GitHub account and is public; the VIN is included only when the
 person ticks the box. Security reports go through private reporting instead (`SECURITY.md`).
 
+*Replaced by decision 13.*
+
 ## 7. A failed or changed answer is never shown as "none" (2026-10-15)
 
 Parsers throw a `FormatError` when a response lacks the fields they read, and the report
@@ -89,3 +91,36 @@ marked `lang="en"`, since translating it would mean sending it to a translation 
 (decision 3). The Transport Canada link stays on the English page because the French address
 couldn't be confirmed from here. The French was written by the AI that wrote the code and
 still needs a fluent speaker's review (UX-09).
+
+## 12. The phone app is the same page, bundled with Capacitor (2026-10-15)
+
+The owner wants Car Report in the App Store and Google Play. `mobile/` wraps the page in
+native iOS and Android projects with Capacitor, and `scripts/copy-web.js` copies the page
+into the app, so it runs from the phone rather than from a website. There is one codebase for
+the website and both apps. The page calls native plugins through the bridge Capacitor injects
+(`window.Capacitor.nativePromise`) in `native.js`, so the root still has no dependencies and
+no build step; only `mobile/` has npm packages.
+
+To be more than a website in a wrapper (Apple guideline 4.2), and to work properly as an app:
+
+- a camera VIN scanner (Google ML Kit, on the device; on Android Google's scanner screen, so
+  no camera permission);
+- backups and spreadsheets go through the share sheet, because a web view can't download;
+- saved data is copied to the phone's settings store, because iOS can clear a web view's
+  storage when space runs low.
+
+Costs: Capacitor and its plugins need updating every year to keep up with Apple's and
+Google's requirements, and store releases can't be rolled back instantly (`docs/runbook.md`).
+
+## 13. Feedback by email; the repository goes private (2026-10-15)
+
+The owner chose to make the repository private. GitHub issues on a private repository are
+closed to the public, and GitHub Pages on the free plan stops serving it, so:
+
+- Send feedback opens a pre-filled email to `SUPPORT_EMAIL` (`src/feedback.js`) in the
+  person's own mail app. Nothing is sent from the app, which keeps decision 3. The button is
+  hidden until the address is set.
+- The privacy policy and support pages (`privacy.html`, `support.html`) are self-contained so
+  the owner can host them anywhere; the privacy policy is also inside the app.
+- Security reports go to the same address (`SECURITY.md`).
+
