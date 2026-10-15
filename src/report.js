@@ -3,23 +3,28 @@ import { decodeVin } from './sources/vpic.js';
 import * as nhtsa from './sources/nhtsa.js';
 import * as tc from './sources/transportCanada.js';
 import { recallMismatch } from './recallMatch.js';
+import { errorKind } from './http.js';
 
 // Builds a vehicle report from public sources. Each section fails independently so
-// one slow or down API doesn't sink the whole report.
+// one slow or down API doesn't sink the whole report. errors[section] holds the technical
+// message and errorKinds[section] what kind of failure it was (see errorKind in http.js);
+// a VIN that decodes without a make, model and year is kind 'unrecognized'.
 export async function buildReport(input, { fetch, include = {}, force = false } = {}) {
   const opts = fetch ? { fetch } : {};
   const check = validateVin(input);
-  const report = { vin: check.vin, vinCheck: check, generatedAt: new Date().toISOString(), errors: {} };
+  const report = { vin: check.vin, vinCheck: check, generatedAt: new Date().toISOString(), errors: {}, errorKinds: {} };
   if (!check.valid && !force) return report;
 
   try {
     report.vehicle = await decodeVin(check.vin, opts);
   } catch (e) {
     report.errors.vehicle = e.message;
+    report.errorKinds.vehicle = errorKind(e);
   }
   const v = report.vehicle;
   if (!v?.make || !v?.model || !v?.year) {
     report.errors.vehicle ??= 'decoder did not return make/model/year';
+    report.errorKinds.vehicle ??= 'unrecognized';
     return report;
   }
   const ymm = { make: v.make, model: v.model, year: v.year };
@@ -36,6 +41,7 @@ export async function buildReport(input, { fetch, include = {}, force = false } 
       report[name] = await fn();
     } catch (e) {
       report.errors[name] = e.message;
+      report.errorKinds[name] = errorKind(e);
     }
   }));
   for (const key of ['recallsUS', 'recallsCanada']) {
@@ -69,6 +75,7 @@ export function formatReport(r) {
     }
   };
   recallBlock('Recalls (Transport Canada)', r.recallsCanada);
+  if (r.recallsCanada) L.push('  Contains information licensed under the Open Government Licence - Canada: https://open.canada.ca/en/open-government-licence-canada');
   recallBlock('Recalls (NHTSA, US)', r.recallsUS);
   if (r.complaints) {
     const c = r.complaints;
@@ -81,5 +88,7 @@ export function formatReport(r) {
   }
   for (const [k, e] of Object.entries(r.errors)) L.push('', `(${k} unavailable: ${e})`);
   L.push('', 'Not included: accident, odometer, ownership, lien and service history. See README.');
-  return L.join('\n');
+  // API text goes straight to a terminal, so drop control characters that could retitle the
+  // window, move the cursor or write the clipboard. Tabs and newlines stay.
+  return L.join('\n').replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g, '');
 }

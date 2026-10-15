@@ -2,12 +2,14 @@
 // https://tc.canada.ca/en/road-transportation/motor-vehicle-safety/motor-vehicle-safety-recalls-database
 // Responses are { ResultSet: [ [ {Name, Value:{Literal}} , ... ], ... ] } - one array of
 // name/value cells per row. Column names are matched loosely since TC labels them in prose.
-import { getJson } from '../http.js';
+import { getJson, FormatError } from '../http.js';
 
 const BASE = 'https://data.tc.gc.ca/v1.3/api/eng/vehicle-recall-database';
 
 export function rowsToObjects(json) {
-  return (json?.ResultSet ?? []).map((row) => {
+  if (json === null || json === undefined) return [];
+  if (!Array.isArray(json.ResultSet)) throw new FormatError("Transport Canada's recall data");
+  return json.ResultSet.map((row) => {
     const o = {};
     for (const cell of row ?? []) {
       const v = cell?.Value;

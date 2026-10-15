@@ -19,3 +19,9 @@ test('rejects bad length, letters and check digit', () => {
   assert.ok(validateVin('1HGCM82633A00435O').errors.some((e) => /I, O or Q/.test(e)));
   assert.ok(validateVin('1HGCM82643A004352').errors.some((e) => /check digit/.test(e)));
 });
+
+test('full-width and invisible characters are cleaned up', async () => {
+  const { normalizeVin } = await import('../src/vin.js');
+  assert.equal(normalizeVin('１ＨＧＣＭ８２６３３Ａ００４３５２'), '1HGCM82633A004352');
+  assert.equal(normalizeVin('1HGCM8263​3A004352﻿'), '1HGCM82633A004352');
+});

@@ -1,7 +1,7 @@
 # vehicle-report
 
 A command-line VIN lookup that builds a Carfax-style vehicle report from **free, public
-government data**. It needs no API keys and has no dependencies (Node ≥ 18).
+government data**. It needs no API keys and has no dependencies (Node ≥ 22).
 
 ```
 $ node bin/vehicle-report.js 1HGCM82633A004352
@@ -10,7 +10,7 @@ $ node bin/vehicle-report.js 1HGCM82633A004352 --json
 
 ## Web page (works on a phone)
 
-`index.html` is the same report as a mobile-friendly web page. It runs entirely in the browser
+`index.html` (with `app.js` and `app.css`) is the same report as a mobile-friendly web page. It runs entirely in the browser
 and calls the government APIs directly, so it needs no server. To host it free with GitHub Pages:
 Settings → Pages → Source "Deploy from a branch" → `main` / `(root)` → Save. The page is then at
 `https://<user>.github.io/<repo>/`, and `?vin=<VIN>` in the URL runs a lookup straight away.
@@ -67,10 +67,43 @@ in a public API. The legitimate ways to get it are:
 Scraping carfax.ca or getting around its paywall would breach its terms of use, so this
 project does not do that.
 
+## Privacy
+
+- **What leaves your device:** the VIN goes to NHTSA's VIN decoder (vPIC), and the decoded
+  year, make and model go to NHTSA's recall, complaint and crash-rating services. GitHub
+  Pages, which hosts the page, sees each page request, including `?vin=` when you open a
+  report link.
+- **What stays on your device:** your records and the VINs you check, in this browser's
+  storage, and any backup or CSV files you save. There are no accounts, cookies or
+  analytics. Remove a vehicle from its page, or erase everything from the page's footer.
+- **Feedback:** Send feedback puts your message (and the VIN, only if you tick the box) into
+  a github.com address. Nothing is sent until you post it on GitHub, where issues are
+  public. Report security problems privately instead (see `SECURITY.md`).
+- The report is free and provided as is. Recalls are matched by model, so confirm with a
+  dealer. Not affiliated with NHTSA, Transport Canada or Carfax.
+
+## Run it locally
+
+Needs Node 22 or later and no install step.
+
+```
+git clone https://github.com/pxkillah/Flightboard-.git && cd Flightboard-
+npm test                                   # offline tests
+node bin/vehicle-report.js 1HGCM82633A004352
+python3 -m http.server 8000                # then open http://localhost:8000
+```
+
+The page has to be served over HTTP because browsers don't load ES modules from `file://`.
+`?vin=<VIN>` in the address runs a lookup straight away. `node scripts/live-check.js` calls the
+real NHTSA APIs; GitHub Actions runs it daily and on pull requests that change the NHTSA code. Architecture decisions are in
+`docs/decisions.md`, incident steps in `docs/runbook.md`, and the status against the
+production standard in `docs/production-readiness.md`.
+
 ## Tests
 
 ```
 npm test
 ```
 
-The tests run offline against stubbed responses in each API's documented format.
+The tests run offline against stubbed responses in each API's documented format. CI runs
+them on Node 22 and 24 for every pull request.
