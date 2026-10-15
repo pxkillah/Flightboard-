@@ -6,8 +6,10 @@ const TRANSLIT = {
 };
 const WEIGHTS = [8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2];
 
+// NFKC turns full-width letters from East Asian keyboards into plain ones, and pasted text
+// can carry invisible zero-width characters.
 export function normalizeVin(vin) {
-  return String(vin ?? '').trim().toUpperCase().replace(/[\s-]/g, '');
+  return String(vin ?? '').normalize('NFKC').replace(/[\u200B-\u200D\u2060\uFEFF]/g, '').trim().toUpperCase().replace(/[\s-]/g, '');
 }
 
 export function checkDigit(vin) {

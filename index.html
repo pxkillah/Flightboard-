@@ -538,7 +538,7 @@ dialog.sheet::backdrop { background: var(--backdrop); }
 import { buildReport } from './src/report.js';
 import { validateVin, normalizeVin } from './src/vin.js';
 import { feedbackUrl } from './src/feedback.js';
-import { makeRecord, sortRecords, summarize, historyText, parseBackup, mergeRecords, fmtKm, localDate } from './src/records.js';
+import { makeRecord, sortRecords, summarize, historyText, parseBackup, mergeRecords, fmtKm, fmtCents, localDate, readStore, backupText, pruneLookups, MAX_BACKUP_BYTES } from './src/records.js';
 
 const $ = (s, root = document) => root.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -564,9 +564,8 @@ const titleCase = (s) => words(s).replace(/(^|[\s(/-])([a-z])/g, (_, p, c) => p 
 const makeName = (m) => (!m ? '' : m.length <= 3 ? m.toUpperCase() : titleCase(m));
 const component = (c) => String(c ?? '').split(':').map((p) => sentence(p)).filter(Boolean).join(' › ');
 const num = (n) => Number(n).toLocaleString('en-CA');
-const money = (n) => `$${Number(n).toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const compact = (n) => (n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : n >= 1000 ? `${+(n / 1000).toFixed(1)}K` : String(n));
-const isoDate = (d) => { const [y, m, day] = String(d).split('-').map(Number); return y && m && day ? `${day} ${MONTHS[m - 1]} ${y}` : String(d ?? ''); };
+const isoDate = (d) => { const [y, m, day] = String(d).split('-').map(Number); return y && m >= 1 && m <= 12 && day ? `${day} ${MONTHS[m - 1]} ${y}` : String(d ?? ''); };
 const monthYear = (d) => { const [y, m] = String(d).split('-').map(Number); return `${MONTHS[m - 1]} ${y}`; };
 const plural = (n, one, many = `${one}s`) => `${num(n)} ${n === 1 ? one : many}`;
 
@@ -614,15 +613,42 @@ function vinProblems(vin) {
 }
 
 // ---------- Storage (this device only) ----------
+// readStore (src/records.js) upgrades older saved data and re-checks it. The result is cached
+// by the raw string, and each call returns a fresh copy because callers change it in place.
+let storeCache = { raw: undefined, json: '', problem: null };
 function loadStore() {
-  try { const d = JSON.parse(localStorage.getItem(STORE) || '{}'); return d && typeof d.vehicles === 'object' && d.vehicles ? d : { vehicles: {} }; }
-  catch { return { vehicles: {} }; }
+  let raw = null;
+  try { raw = localStorage.getItem(STORE); } catch { /* storage blocked: nothing saved */ }
+  if (raw !== storeCache.raw) {
+    const { data, dropped, problem } = readStore(raw);
+    if (problem === 'unreadable' || dropped) {
+      // Keep the original before anything writes over it, for recovery by hand (see docs/runbook.md).
+      try { localStorage.setItem(`${STORE}:unreadable`, raw); } catch { /* nothing more to do */ }
+      setTimeout(() => toast(problem === 'unreadable'
+        ? "Your saved records couldn't be read. If you have a backup, restore it."
+        : `${plural(dropped, 'saved record')} couldn't be read and ${dropped === 1 ? 'was' : 'were'} left out. If you have a backup, restore it.`, { long: true }));
+    }
+    storeCache = { raw, json: JSON.stringify(data), problem };
+  }
+  return JSON.parse(storeCache.json);
 }
-function saveStore(d) { try { localStorage.setItem(STORE, JSON.stringify(d)); return true; } catch { return false; } }
+// Returns null when saved, or a message saying why not.
+function saveStore(d) {
+  if (storeCache.problem === 'newer') return 'A newer version of this page saved your records. Reload the page before changing them.';
+  try {
+    localStorage.setItem(STORE, JSON.stringify(d));
+    return null;
+  } catch (e) {
+    return e?.name === 'QuotaExceededError' || e?.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+      ? 'Storage on this device is full. Save a backup, then remove vehicles you no longer need.'
+      : "Couldn't save. This browser is blocking storage, for example in Private Browsing.";
+  }
+}
 const recordsFor = (vin) => loadStore().vehicles[vin]?.records ?? [];
 function updateVehicle(vin, patch) {
   const d = loadStore();
   d.vehicles[vin] = { name: '', records: [], ...d.vehicles[vin], ...patch };
+  d.vehicles = pruneLookups(d.vehicles);
   return saveStore(d);
 }
 const setRecords = (vin, records) => updateVehicle(vin, current.name ? { records, name: current.name } : { records });
@@ -636,12 +662,12 @@ function recentVehicles() {
 
 // ---------- Small UI helpers ----------
 let toastTimer;
-function toast(msg) {
+function toast(msg, { long = false } = {}) {
   const t = $('#toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  toastTimer = setTimeout(() => t.classList.remove('show'), long ? 7000 : 2600);
 }
 const input = $('#vin');
 function updateCounter() {
@@ -944,7 +970,7 @@ function entryItem(r, flagged) {
     title = r.work || 'Service';
     if (typeof r.km === 'number') meta.push(fmtKm(r.km));
     if (r.shop) meta.push(r.shop);
-    if (typeof r.cost === 'number') meta.push(money(r.cost));
+    if (typeof r.costCents === 'number') meta.push(fmtCents(r.costCents));
   } else if (r.type === 'mileage') {
     title = fmtKm(r.km);
   } else {
@@ -1005,7 +1031,7 @@ function renderRecords() {
   if (s.registrationStatus === 'expired') pills.push(pill('crit', 'alert', `Registration expired ${isoDate(s.latestRegistration.expiry)}`));
   else if (s.registrationStatus === 'expiring') pills.push(pill('warn', 'alert', `Registration expires ${isoDate(s.latestRegistration.expiry)}`));
   else if (s.registrationStatus === 'valid') pills.push(pill('good', 'check', `Registered until ${isoDate(s.latestRegistration.expiry)}`));
-  if (s.serviceCount) pills.push(pill('neutral', 'wrench', `${plural(s.serviceCount, 'service')}${s.serviceCost ? ` · ${money(s.serviceCost)}` : ''}`));
+  if (s.serviceCount) pills.push(pill('neutral', 'wrench', `${plural(s.serviceCount, 'service')}${s.serviceCostCents ? ` · ${fmtCents(s.serviceCostCents)}` : ''}`));
   if (s.odometerIssues.length) pills.push(pill('crit', 'alert', s.odometerIssues.length === 1 ? 'Odometer check: 1 lower reading' : `Odometer check: ${s.odometerIssues.length} lower readings`));
   else if (pts.length >= 2) pills.push(pill('good', 'check', 'Odometer readings add up'));
 
@@ -1163,8 +1189,9 @@ form.addEventListener('submit', (e) => {
   const err = $('#rec-err');
   const { record, errors } = makeRecord(Object.fromEntries(new FormData(form)), { today: localDate() });
   if (errors.length) { err.textContent = errors.join(' '); err.hidden = false; return; }
-  if (!setRecords(current.vin, [...recordsFor(current.vin), record])) {
-    err.textContent = "Couldn't save. This browser is blocking storage, for example in Private Browsing.";
+  const problem = setRecords(current.vin, [...recordsFor(current.vin), record]);
+  if (problem) {
+    err.textContent = problem;
     err.hidden = false;
     return;
   }
@@ -1225,7 +1252,7 @@ async function copyHistory() {
 }
 function saveBackup() {
   const d = loadStore();
-  const blob = new Blob([JSON.stringify({ app: 'vin-report', version: 1, savedAt: new Date().toISOString(), vehicles: d.vehicles }, null, 2)], { type: 'application/json' });
+  const blob = new Blob([backupText(d.vehicles)], { type: 'application/json' });
   const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `vin-report-backup-${localDate()}.json` });
   document.body.append(a);
   a.click();
@@ -1235,20 +1262,22 @@ function saveBackup() {
 }
 async function restoreBackup(file) {
   try {
-    const incoming = parseBackup(await file.text());
+    if (file.size > MAX_BACKUP_BYTES) throw new Error('That file is too big to be a VIN Report backup.');
+    const { vehicles, skipped } = parseBackup(await file.text());
     const d = loadStore();
     let n = 0;
-    for (const [vin, v] of Object.entries(incoming)) {
+    for (const [vin, v] of Object.entries(vehicles)) {
       const prev = d.vehicles[vin] ?? { name: v.name, records: [] };
       d.vehicles[vin] = { ...prev, name: prev.name || v.name, records: mergeRecords(prev.records ?? [], v.records) };
       n += v.records.length;
     }
-    if (!saveStore(d)) throw new Error('this browser is blocking storage');
+    const problem = saveStore(d);
+    if (problem) throw new Error(problem);
     renderRecords();
     if (!current.vin) renderHome();
-    toast(`Restored ${plural(n, 'record')}`);
+    toast(`Restored ${plural(n, 'record')}${skipped ? `. Skipped ${plural(skipped, 'record')} that ${skipped === 1 ? "wasn't" : "weren't"} valid.` : ''}`, { long: Boolean(skipped) });
   } catch (e) {
-    toast(`Couldn't restore: ${e.message}`);
+    toast(`Couldn't restore. ${e.message}`, { long: true });
   }
 }
 
@@ -1281,7 +1310,8 @@ document.addEventListener('click', (e) => {
     const id = t.dataset.del;
     if (pendingDelete === id) {
       pendingDelete = null;
-      setRecords(current.vin, recordsFor(current.vin).filter((r) => r.id !== id));
+      const problem = setRecords(current.vin, recordsFor(current.vin).filter((r) => r.id !== id));
+      if (problem) { toast(problem, { long: true }); return; }
       renderRecords();
       toast('Record deleted');
     } else {
