@@ -362,6 +362,9 @@ dialog.sheet::backdrop { background: var(--backdrop); }
 .sk-row { display: flex; gap: .4rem; }
 .toast { position: fixed; z-index: 60; left: 50%; bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 14px); opacity: 0; padding: .65rem 1.1rem; border-radius: 999px; background: var(--ink); color: var(--bg); font-size: .875rem; font-weight: 600; box-shadow: var(--shadow-lg); pointer-events: none; transition: opacity .2s, transform .2s; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.has-action { display: flex; align-items: center; gap: .5rem; padding-right: .5rem; pointer-events: auto; }
+.toast-btn { min-height: 2.25rem; padding: 0 .75rem; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+.remind b { color: var(--warn-ink); }
 .site-foot { display: grid; gap: .45rem; padding-block: 1.5rem calc(2rem + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); font-size: .8125rem; color: var(--ink-3); }
 .site-foot p { max-width: 40rem; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
@@ -419,7 +422,7 @@ dialog.sheet::backdrop { background: var(--backdrop); }
     </section>
 
     <section id="recent-block" hidden>
-      <h2 class="section-label">Recently checked</h2>
+      <h2 class="section-label">Your vehicles</h2>
       <ul class="vehicles" id="recent-list"></ul>
     </section>
 
@@ -445,7 +448,7 @@ dialog.sheet::backdrop { background: var(--backdrop); }
 
 <footer class="wrap site-foot">
   <p>Vehicle details, U.S. recalls, owner complaints and crash ratings come from NHTSA. Recalls are listed by model, so confirm what applies to a specific vehicle with a dealer.</p>
-  <p>Records you add are saved on this device only.</p>
+  <p>Your records and the VINs you check are saved on this device only. <button type="button" class="link-btn" data-act="erase">Erase all VIN Report data on this device</button></p>
   <p><a href="https://github.com/pxkillah/Flightboard-" target="_blank" rel="noopener">Source code and data notes</a></p>
   <button type="button" class="btn secondary small" id="feedback-btn"><svg class="ic" aria-hidden="true"><use href="#i-chat"></use></svg>Send feedback</button>
 </footer>
@@ -468,7 +471,7 @@ dialog.sheet::backdrop { background: var(--backdrop); }
       <label class="field"><span class="field-label">Odometer <em id="km-optional">(optional)</em></span><span class="affix has-suf"><input name="km" id="f-km" inputmode="numeric" placeholder="74,200"><span class="suf">km</span></span></label>
     </div>
     <div class="type-fields" data-for="service">
-      <label class="field"><span class="field-label">Work done</span><input name="work" id="f-work" placeholder="Oil change, brakes, tires…"></label>
+      <label class="field"><span class="field-label">Work done</span><input name="work" id="f-work" dir="auto" placeholder="Oil change, brakes, tires…"></label>
       <div class="quick" aria-label="Common services">
         <button type="button" data-work="Oil change">Oil change</button>
         <button type="button" data-work="Tire change">Tire change</button>
@@ -478,7 +481,7 @@ dialog.sheet::backdrop { background: var(--backdrop); }
         <button type="button" data-work="Recall repair">Recall repair</button>
       </div>
       <div class="field-row">
-        <label class="field"><span class="field-label">Shop</span><input name="shop" id="f-shop" placeholder="Ford dealer"></label>
+        <label class="field"><span class="field-label">Shop</span><input name="shop" id="f-shop" dir="auto" placeholder="Ford dealer"></label>
         <label class="field"><span class="field-label">Cost</span><span class="affix has-pre"><span class="pre">$</span><input name="cost" id="f-cost" inputmode="decimal" placeholder="0.00"></span></label>
       </div>
     </div>
@@ -494,11 +497,11 @@ dialog.sheet::backdrop { background: var(--backdrop); }
             <option value="YT">Yukon</option><option value="Outside Canada">Outside Canada</option>
           </select>
         </label>
-        <label class="field"><span class="field-label">Plate</span><input name="plate" id="f-plate" autocapitalize="characters" placeholder="ABCD 123"></label>
+        <label class="field"><span class="field-label">Plate</span><input name="plate" id="f-plate" dir="auto" autocapitalize="characters" placeholder="ABCD 123"></label>
       </div>
       <label class="field"><span class="field-label">Expires</span><input type="date" name="expiry" id="f-expiry"></label>
     </div>
-    <label class="field"><span class="field-label">Notes <em>(optional)</em></span><textarea name="notes" id="f-notes" rows="2"></textarea></label>
+    <label class="field"><span class="field-label">Notes <em>(optional)</em></span><textarea name="notes" id="f-notes" dir="auto" rows="2"></textarea></label>
     <p class="form-error" id="rec-err" role="alert" hidden></p>
     <div class="sheet-actions">
       <button type="button" class="btn ghost" data-close>Cancel</button>
@@ -520,7 +523,7 @@ dialog.sheet::backdrop { background: var(--backdrop); }
       <label><input type="radio" name="kind" value="idea"><span><svg class="ic" aria-hidden="true"><use href="#i-star"></use></svg>Idea</span></label>
       <label><input type="radio" name="kind" value="data"><span><svg class="ic" aria-hidden="true"><use href="#i-info"></use></svg>Wrong data</span></label>
     </fieldset>
-    <label class="field"><span class="field-label">Your feedback</span><textarea name="message" id="fb-message" rows="5" maxlength="1500" placeholder="What happened, or what would make this better?"></textarea></label>
+    <label class="field"><span class="field-label">Your feedback</span><textarea name="message" id="fb-message" dir="auto" rows="5" maxlength="1500" placeholder="What happened, or what would make this better?"></textarea></label>
     <label class="check" id="fb-vin-row" hidden><input type="checkbox" name="includeVin" id="fb-vin"><span>Include the VIN <b id="fb-vin-text"></b></span></label>
     <p class="sheet-note">This opens a pre-filled issue on GitHub, where you can review it before posting. Posting needs a free GitHub account, and issues there are public.</p>
     <p class="form-error" id="fb-err" role="alert" hidden></p>
@@ -538,7 +541,7 @@ dialog.sheet::backdrop { background: var(--backdrop); }
 import { buildReport } from './src/report.js';
 import { validateVin, normalizeVin } from './src/vin.js';
 import { feedbackUrl } from './src/feedback.js';
-import { makeRecord, sortRecords, summarize, historyText, parseBackup, mergeRecords, fmtKm, fmtCents, localDate, readStore, backupText, pruneLookups, MAX_BACKUP_BYTES } from './src/records.js';
+import { makeRecord, sortRecords, summarize, historyText, parseBackup, mergeRecords, recordsCsv, fmtKm, fmtCents, localDate, readStore, backupText, pruneLookups, MAX_BACKUP_BYTES } from './src/records.js';
 
 const $ = (s, root = document) => root.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -651,23 +654,39 @@ function updateVehicle(vin, patch) {
   d.vehicles = pruneLookups(d.vehicles);
   return saveStore(d);
 }
-const setRecords = (vin, records) => updateVehicle(vin, current.name ? { records, name: current.name } : { records });
+// Record changes are stamped so the page can tell when there's no backup of the latest ones.
+function setRecords(vin, records) {
+  const d = loadStore();
+  const name = vin === current.vin && current.name ? current.name : undefined;
+  d.vehicles[vin] = { name: '', ...d.vehicles[vin], records, ...(name && { name }) };
+  d.lastChangeAt = Date.now();
+  return saveStore(d);
+}
+// Every vehicle with records, and the 6 most recent lookups without any.
 function recentVehicles() {
-  return Object.entries(loadStore().vehicles)
+  const list = Object.entries(loadStore().vehicles)
     .filter(([vin, v]) => /^[A-HJ-NPR-Z0-9]{17}$/.test(vin) && (v.lastViewed || v.records?.length))
     .map(([vin, v]) => ({ vin, name: v.name, records: v.records?.length ?? 0, lastViewed: v.lastViewed ?? 0 }))
-    .sort((a, b) => b.lastViewed - a.lastViewed)
-    .slice(0, 6);
+    .sort((a, b) => b.lastViewed - a.lastViewed);
+  const lookups = list.filter((v) => !v.records).slice(0, 6);
+  return list.filter((v) => v.records || lookups.includes(v));
 }
 
 // ---------- Small UI helpers ----------
 let toastTimer;
-function toast(msg, { long = false } = {}) {
+// action: { label, run } adds a button, such as Undo, and keeps the toast up for 8 seconds.
+function toast(msg, { long = false, action = null } = {}) {
   const t = $('#toast');
   t.textContent = msg;
+  t.classList.toggle('has-action', Boolean(action));
+  if (action) {
+    const btn = Object.assign(document.createElement('button'), { type: 'button', className: 'toast-btn', textContent: action.label });
+    btn.addEventListener('click', () => { clearTimeout(toastTimer); t.classList.remove('show', 'has-action'); btn.remove(); action.run(); }, { once: true });
+    t.append(btn);
+  }
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), long ? 7000 : 2600);
+  toastTimer = setTimeout(() => { t.classList.remove('show', 'has-action'); t.querySelector('.toast-btn')?.remove(); }, action ? 8000 : long ? 7000 : 2600);
 }
 const input = $('#vin');
 function updateCounter() {
@@ -695,7 +714,7 @@ function renderHome() {
   $('#recent-block').hidden = !list.length;
   $('#recent-list').innerHTML = list.map((v) => `<li><button type="button" class="vehicle" data-vin="${esc(v.vin)}">
       <span class="vehicle-icon">${icon('van')}</span>
-      <span class="vehicle-text"><b>${esc(v.name || 'Vehicle')}</b><span class="mono">${esc(v.vin)}</span></span>
+      <span class="vehicle-text"><b><bdi>${esc(v.name || 'Vehicle')}</bdi></b><span class="mono">${esc(v.vin)}</span></span>
       <span class="vehicle-aside">${v.records ? esc(plural(v.records, 'record')) : ''}</span>${icon('chevron-right')}
     </button></li>`).join('');
 }
@@ -712,16 +731,21 @@ function showHome() {
 }
 
 // ---------- Lookup ----------
-async function lookup(raw, { push = true, example = false, force = false } = {}) {
+async function lookup(raw, { push = true, example = false, force = false, retry = false } = {}) {
   const check = validateVin(raw);
   const vin = check.vin;
   input.value = vin;
   updateCounter();
   if (!check.valid && !force) { showSearchMsg(vin); return; }
   hideSearchMsg();
-  if (push) history.pushState({ vin }, '', `?vin=${encodeURIComponent(vin)}${force ? '&force=1' : ''}`);
+  // Repeat taps on Check while this VIN is loading would start the same lookup again.
+  if (!retry && vin === current.vin && current.loading) return;
+  if (push) {
+    const sameVin = new URLSearchParams(location.search).get('vin') === vin;
+    history[sameVin ? 'replaceState' : 'pushState']({ vin }, '', `?vin=${encodeURIComponent(vin)}${force ? '&force=1' : ''}`);
+  }
   const seq = ++lookupSeq;
-  current = { vin, name: '', report: null, example };
+  current = { vin, name: '', report: null, example, loading: true };
   chart = null;
   showView('report');
   $('#report').innerHTML = skeleton();
@@ -730,10 +754,11 @@ async function lookup(raw, { push = true, example = false, force = false } = {})
   try {
     report = await buildReport(vin, { include: { recallsCanada: false }, force });
   } catch (e) {
-    if (seq === lookupSeq) $('#report').innerHTML = failedPanel(e.message);
+    if (seq === lookupSeq) { current.loading = false; $('#report').innerHTML = failedPanel(e.message); }
     return;
   }
   if (seq !== lookupSeq) return;
+  current.loading = false;
   const v = report.vehicle;
   current.report = report;
   current.name = v?.make ? vehicleName(v) : '';
@@ -984,10 +1009,10 @@ function entryItem(r, flagged) {
     <span class="node">${icon(TYPE_ICON[r.type] ?? 'info')}</span>
     <div class="entry-body">
       <p class="entry-head"><span>${esc(TYPE_NAME[r.type] ?? '')}</span><time datetime="${esc(r.date)}">${esc(isoDate(r.date))}</time></p>
-      <p class="entry-title">${esc(title)}</p>
-      ${meta.length ? `<p class="entry-meta">${esc(meta.join(' · '))}</p>` : ''}
+      <p class="entry-title" dir="auto">${esc(title)}</p>
+      ${meta.length ? `<p class="entry-meta">${meta.map((m) => `<bdi>${esc(m)}</bdi>`).join(' · ')}</p>` : ''}
       ${flagged ? pill('crit', 'alert', 'Lower than an earlier reading') : ''}
-      ${r.notes ? `<p class="entry-notes">${esc(r.notes)}</p>` : ''}
+      ${r.notes ? `<p class="entry-notes" dir="auto">${esc(r.notes)}</p>` : ''}
     </div>
     <button type="button" class="icon-btn del${confirming ? ' confirm' : ''}" data-del="${esc(r.id)}" aria-label="Delete this record">${confirming ? 'Delete?' : icon('trash')}</button>
   </li>`;
@@ -998,14 +1023,20 @@ function renderRecords() {
   if (!el || !current.vin) return;
   const recs = recordsFor(current.vin);
   const head = `<header class="panel-head"><span class="panel-icon">${icon('gauge')}</span><h2>My records</h2><button type="button" class="btn primary small" data-add>${icon('plus')}Add</button></header>`;
-  const privacy = `<p class="fine gap-top">Saved on this device only. Safari can clear data for sites you haven't opened in a while, so add VIN Report to your Home Screen and save a backup now and then.</p>`;
+  const store = loadStore();
+  const backup = !recs.length ? ''
+    : !store.lastBackupAt ? ' <b>No backup saved yet.</b>'
+    : (store.lastChangeAt ?? 0) > store.lastBackupAt ? ` <b>Changed since your last backup on ${esc(isoDate(localDate(new Date(store.lastBackupAt))))}.</b>`
+    : ` Last backup ${esc(isoDate(localDate(new Date(store.lastBackupAt))))}.`;
+  const privacy = `<p class="fine gap-top${backup.includes('<b>') ? ' remind' : ''}">Saved on this device only. Safari can clear data for sites you haven't opened in a while, so add VIN Report to your Home Screen and save a backup now and then.${backup}</p>`;
+  const forget = store.vehicles[current.vin] ? `<button type="button" class="btn ghost small" data-act="forget">${icon('trash')}Remove from this device</button>` : '';
   if (!recs.length) {
     el.innerHTML = `${head}<div class="records-empty">
         <h3>Start this vehicle's logbook</h3>
         <p>Log oil changes and repairs, odometer readings and registration renewals. You'll get a mileage chart, a warning if the odometer ever goes backwards, and a history you can share with a buyer or mechanic.</p>
         <button type="button" class="btn primary" data-add>${icon('plus')}Add the first record</button>
       </div>
-      <div class="tools"><button type="button" class="btn ghost small" data-act="restore">${icon('upload')}Restore a backup</button></div>${privacy}`;
+      <div class="tools"><button type="button" class="btn ghost small" data-act="restore">${icon('upload')}Restore a backup</button>${forget}</div>${privacy}`;
     chart = null;
     renderTiles();
     return;
@@ -1046,7 +1077,9 @@ function renderRecords() {
     <div class="tools">
       <button type="button" class="btn secondary small" data-act="copy">${icon('copy')}Copy history</button>
       <button type="button" class="btn secondary small" data-act="backup">${icon('download')}Save backup</button>
+      <button type="button" class="btn secondary small" data-act="csv">${icon('doc')}Export CSV</button>
       <button type="button" class="btn ghost small" data-act="restore">${icon('upload')}Restore</button>
+      ${forget}
     </div>${privacy}`;
   renderTiles();
   bindChart(pts);
@@ -1180,6 +1213,7 @@ function openSheet() {
   setType('service');
   $('#rec-err').hidden = true;
   if (typeof sheet.showModal === 'function') sheet.showModal(); else sheet.setAttribute('open', '');
+  history.pushState({ ...history.state, sheet: true }, '');
 }
 function closeSheet() { if (typeof sheet.close === 'function') sheet.close(); else sheet.removeAttribute('open'); }
 form.addEventListener('change', (e) => { if (e.target.name === 'type') setType(e.target.value); });
@@ -1198,6 +1232,8 @@ form.addEventListener('submit', (e) => {
   closeSheet();
   renderRecords();
   toast('Record saved');
+  // Asks the browser not to clear this site's storage on its own; harmless if it says no.
+  navigator.storage?.persist?.().catch(() => {});
 });
 
 // ---------- Feedback sheet ----------
@@ -1215,6 +1251,7 @@ function openFeedback() {
   $('#fb-vin-text').textContent = fbVin ?? '';
   fbForm.elements.includeVin.checked = false;
   if (typeof fbSheet.showModal === 'function') fbSheet.showModal(); else fbSheet.setAttribute('open', '');
+  history.pushState({ ...history.state, sheet: true }, '');
   $('#fb-message').focus();
 }
 function closeFeedback() { if (typeof fbSheet.close === 'function') fbSheet.close(); else fbSheet.removeAttribute('open'); }
@@ -1250,15 +1287,43 @@ async function copyHistory() {
   ta.remove();
   toast(ok ? 'History copied' : "Couldn't copy on this device");
 }
-function saveBackup() {
-  const d = loadStore();
-  const blob = new Blob([backupText(d.vehicles)], { type: 'application/json' });
-  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `vin-report-backup-${localDate()}.json` });
+function download(name, text, type) {
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([text], { type })), download: name });
   document.body.append(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+function saveBackup() {
+  const d = loadStore();
+  download(`vin-report-backup-${localDate()}.json`, backupText(d.vehicles), 'application/json');
+  d.lastBackupAt = Date.now();
+  saveStore(d);
+  renderRecords();
   toast('Backup file created');
+}
+function exportCsv() {
+  download(`vin-report-${current.vin}-${localDate()}.csv`, recordsCsv(recordsFor(current.vin)), 'text/csv');
+  toast('Spreadsheet file created');
+}
+function forgetVehicle() {
+  const n = recordsFor(current.vin).length;
+  if (!confirm(n ? `Remove this vehicle and its ${plural(n, 'record')} from this device? This can't be undone, so save a backup first if you might need them.` : 'Remove this vehicle from this device?')) return;
+  const d = loadStore();
+  delete d.vehicles[current.vin];
+  const problem = saveStore(d);
+  if (problem) { toast(problem, { long: true }); return; }
+  history.pushState({}, '', location.pathname);
+  showHome();
+  toast('Vehicle removed from this device');
+}
+function eraseAll() {
+  if (!confirm("Erase every vehicle and record VIN Report has saved on this device? This can't be undone, so save a backup first if you might need them.")) return;
+  try {
+    for (const key of Object.keys(localStorage)) if (key === STORE || key.startsWith(`${STORE}:`)) localStorage.removeItem(key);
+  } catch { /* storage blocked: nothing saved */ }
+  if (current.vin) renderRecords(); else renderHome();
+  toast('All VIN Report data on this device was erased');
 }
 async function restoreBackup(file) {
   try {
@@ -1286,7 +1351,18 @@ input.addEventListener('input', () => { updateCounter(); hideSearchMsg(); });
 $('#search-form').addEventListener('submit', (e) => { e.preventDefault(); input.blur(); lookup(input.value); });
 $('#logo').addEventListener('click', () => { history.pushState({}, '', location.pathname); showHome(); window.scrollTo(0, 0); });
 $('#restore-file').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) restoreBackup(f); });
-window.addEventListener('popstate', route);
+// Opening a sheet adds a history entry, so Back closes the sheet instead of changing the
+// page underneath it. Closing it any other way takes that entry back off.
+let ownBack = false;
+for (const d of [sheet, fbSheet]) {
+  d.addEventListener('close', () => { if (history.state?.sheet) { ownBack = true; history.back(); } });
+}
+window.addEventListener('popstate', () => {
+  const open = [sheet, fbSheet].find((d) => d.open);
+  if (open) { open.close(); return; }
+  if (ownBack) { ownBack = false; return; }
+  route();
+});
 window.addEventListener('scroll', () => $('#topbar').classList.toggle('scrolled', window.scrollY > 4), { passive: true });
 
 document.addEventListener('click', (e) => {
@@ -1299,7 +1375,7 @@ document.addEventListener('click', (e) => {
   } else if (t.matches('[data-example]')) lookup(EXAMPLE_VIN, { example: true });
   else if (t.matches('[data-vin]')) lookup(t.dataset.vin);
   else if (t.matches('[data-force]')) lookup(input.value, { force: true });
-  else if (t.matches('[data-retry]')) lookup(current.vin ?? input.value, { push: false, example: current.example });
+  else if (t.matches('[data-retry]')) lookup(current.vin ?? input.value, { push: false, example: current.example, retry: true });
   else if (t.matches('[data-add]')) openSheet();
   else if (t.matches('[data-close]')) (fbSheet.contains(t) ? closeFeedback : closeSheet)();
   else if (t.matches('[data-work]')) { const w = form.elements.work; w.value = w.value ? `${w.value}, ${t.dataset.work}` : t.dataset.work; }
@@ -1310,10 +1386,16 @@ document.addEventListener('click', (e) => {
     const id = t.dataset.del;
     if (pendingDelete === id) {
       pendingDelete = null;
-      const problem = setRecords(current.vin, recordsFor(current.vin).filter((r) => r.id !== id));
+      const vin = current.vin;
+      const removed = recordsFor(vin).find((r) => r.id === id);
+      const problem = setRecords(vin, recordsFor(vin).filter((r) => r.id !== id));
       if (problem) { toast(problem, { long: true }); return; }
       renderRecords();
-      toast('Record deleted');
+      toast('Record deleted', { action: { label: 'Undo', run: () => {
+        const again = setRecords(vin, mergeRecords(recordsFor(vin), [removed]));
+        if (current.vin === vin) renderRecords();
+        toast(again ?? 'Record restored');
+      } } });
     } else {
       // Relabel in place so nothing else on the page is redrawn.
       const reset = (rid) => { const b = document.querySelector(`[data-del="${CSS.escape(rid)}"]`); if (b) { b.classList.remove('confirm'); b.innerHTML = icon('trash'); } };
@@ -1326,6 +1408,9 @@ document.addEventListener('click', (e) => {
   } else if (t.matches('[data-act="copy"]')) copyHistory();
   else if (t.matches('[data-act="backup"]')) saveBackup();
   else if (t.matches('[data-act="restore"]')) $('#restore-file').click();
+  else if (t.matches('[data-act="csv"]')) exportCsv();
+  else if (t.matches('[data-act="forget"]')) forgetVehicle();
+  else if (t.matches('[data-act="erase"]')) eraseAll();
 });
 
 function route() {

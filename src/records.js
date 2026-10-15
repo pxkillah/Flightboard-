@@ -14,7 +14,8 @@ export const TYPES = {
   registration: 'Registration',
 };
 
-// Saved data: { version, vehicles: { [VIN]: { name, records[], lastViewed? } }, lastBackupAt? }.
+// Saved data: { version, vehicles: { [VIN]: { name, records[], lastViewed? } }, lastBackupAt?,
+// lastChangeAt? } (both times in ms, so the page can say when the records aren't backed up).
 // Version 1 had no version field and kept cost as dollars (a float); version 2 keeps
 // costCents, an integer. Backup files use the same version numbers.
 export const STORE_VERSION = 2;
@@ -275,7 +276,7 @@ export function readStore(raw) {
   }
   const { vehicles, dropped } = cleanVehicles(parsed.vehicles, { strict: false });
   const data = { version: STORE_VERSION, vehicles };
-  if (Number.isFinite(parsed.lastBackupAt)) data.lastBackupAt = parsed.lastBackupAt;
+  for (const k of ['lastBackupAt', 'lastChangeAt']) if (Number.isFinite(parsed[k])) data[k] = parsed[k];
   return { data, dropped, problem: Number(parsed.version) > STORE_VERSION ? 'newer' : null };
 }
 
