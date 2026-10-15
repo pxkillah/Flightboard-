@@ -28,7 +28,8 @@ export function parseComplaints(json) {
   const byComponent = {};
   let crashes = 0, fires = 0, injuries = 0, deaths = 0;
   for (const c of list) {
-    for (const comp of String(c.components ?? 'UNKNOWN').split(',')) {
+    // Components are joined with a bare comma; names like "SERVICE BRAKES, HYDRAULIC" contain ", ".
+    for (const comp of String(c.components ?? 'UNKNOWN').split(/,(?=\S)/)) {
       const k = comp.trim() || 'UNKNOWN';
       byComponent[k] = (byComponent[k] ?? 0) + 1;
     }

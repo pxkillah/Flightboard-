@@ -11,7 +11,7 @@ const FIELDS = {
   engineCylinders: 'EngineCylinders', displacementL: 'DisplacementL',
   engineHp: 'EngineHP', fuelType: 'FuelTypePrimary', electrification: 'ElectrificationLevel',
   plantCity: 'PlantCity', plantState: 'PlantState', plantCountry: 'PlantCountry',
-  engineModel: 'EngineModel', turbo: 'Turbo',
+  engineModel: 'EngineModel', turbo: 'Turbo', engineConfig: 'EngineConfiguration',
   gvwr: 'GVWR', airbagsFront: 'AirBagLocFront', abs: 'ABS', esc: 'ESC',
 };
 

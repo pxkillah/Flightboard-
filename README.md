@@ -21,6 +21,11 @@ expires within 30 days, and it can copy the history as text or save and restore 
 Records are stored only in that browser (`localStorage`) and never uploaded. They are owner-entered
 and not verified, and the shared history text says so.
 
+It installs as a Home Screen app (Safari: Share → Add to Home Screen), using
+`manifest.webmanifest` and the icons in `icons/`. The page makes no requests except to NHTSA: the
+fonts are self-hosted in `fonts/` (Barlow Semi Condensed and B612 Mono, both under the SIL Open
+Font License, with license files alongside).
+
 ## What it pulls
 
 | Section | Source | Endpoint |
