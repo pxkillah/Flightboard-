@@ -48,6 +48,18 @@
   details.other { border-top: 1px solid var(--line); margin-top: .5rem; padding-top: .5rem; }
   details summary { cursor: pointer; color: var(--accent); font-size: .9rem; margin-top: .3rem; }
   .note { color: var(--muted); font-size: .85rem; }
+  .rec-form { display: grid; gap: .6rem; margin-top: .6rem; }
+  .rec-form label { display: grid; gap: .2rem; font-size: .85rem; color: var(--muted); }
+  .rec-form input, .rec-form select, .rec-form textarea { font: inherit; font-size: 1rem; color: var(--text); background: var(--bg);
+    border: 1px solid var(--line); border-radius: .5rem; padding: .55rem .6rem; width: 100%; text-transform: none; letter-spacing: 0; font-family: inherit; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+  .btn2 { font: inherit; font-size: .9rem; font-weight: 600; padding: .5rem .8rem; border-radius: .5rem;
+          border: 1px solid var(--line); background: transparent; color: var(--accent); }
+  .btn2.danger { color: var(--warn); }
+  .rec-head { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
+  .ok { color: var(--ok); }
+  .status { font-size: .9rem; margin: .4rem 0 0; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -61,11 +73,12 @@
   </form>
   <p class="hint">Find it at the bottom of the windshield on the driver's side, or on the driver's door frame.</p>
   <div id="out" aria-live="polite"></div>
-  <p class="card note">Not included: accident, odometer, ownership, lien and service history. That data isn't public; see the
-    <a href="https://github.com/pxkillah/Flightboard-#what-it-does-not-include-and-where-that-data-actually-lives">README</a> for where to get it.</p>
+  <p class="card note">Accident, ownership, lien and other owners' service history aren't public data, so they can't be looked up here; see the
+    <a href="https://github.com/pxkillah/Flightboard-#what-it-does-not-include-and-where-that-data-actually-lives">README</a> for where to get them. Use <strong>My records</strong> to keep your own service, odometer and registration history.</p>
 </main>
 <script type="module">
 import { buildReport } from './src/report.js';
+import { TYPES, makeRecord, sortRecords, summarize, historyText, parseBackup, mergeRecords, fmtKm, localDate } from './src/records.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -107,7 +120,7 @@ function render(r) {
   let html = '';
   const v = r.vehicle;
   if (!v?.make) {
-    return card('Vehicle', `<p class="err">Couldn't decode this VIN: ${esc(r.errors.vehicle ?? 'no data returned')}</p>`);
+    return card('Vehicle', `<p class="err">Couldn't decode this VIN: ${esc(r.errors.vehicle ?? 'no data returned')}</p>`) + '<section class="card" id="records"></section>';
   }
   const rows = [
     ['Body', v.bodyClass], ['Drive', v.driveType], ['Engine', [v.engineCylinders && `${v.engineCylinders} cyl`, v.displacementL && `${Number(v.displacementL).toFixed(1)} L`, v.engineHp && `${v.engineHp} hp`].filter(Boolean).join(' · ')],
@@ -118,6 +131,7 @@ function render(r) {
     <div class="meta">${esc(r.vin)}</div>
     <dl>${rows.map(([k, x]) => `<dt>${esc(k)}</dt><dd>${esc(x)}</dd>`).join('')}</dl>
     ${(v.decodeWarnings ?? []).map((w) => `<p class="meta">⚠ ${esc(w)}</p>`).join('')}`);
+  html += '<section class="card" id="records"></section>';
   // Transport Canada's API doesn't allow requests from other websites, so link to its own search instead.
   html += card('Recalls in Canada', `<p class="meta">Transport Canada's recall data can't be loaded on this page.</p>
     <p><a href="https://tc.canada.ca/en/road-transportation/motor-vehicle-safety/motor-vehicle-safety-recalls-database" target="_blank" rel="noopener">Check on Transport Canada →</a></p>
@@ -140,11 +154,188 @@ function render(r) {
   return html;
 }
 
+
+// ---- My records: kept in this browser only ----
+const STORE = 'vin-report:v1';
+const today = () => localDate();
+let current = { vin: null, name: '' };
+let pendingDelete = null;
+
+function loadStore() {
+  try { const d = JSON.parse(localStorage.getItem(STORE) || '{}'); return d && typeof d.vehicles === 'object' ? d : { vehicles: {} }; }
+  catch { return { vehicles: {} }; }
+}
+function saveStore(d) {
+  try { localStorage.setItem(STORE, JSON.stringify(d)); return true; } catch { return false; }
+}
+const recordsFor = (vin) => loadStore().vehicles[vin]?.records ?? [];
+function setRecords(vin, records) {
+  const d = loadStore();
+  d.vehicles ??= {};
+  d.vehicles[vin] = { name: current.name || d.vehicles[vin]?.name || '', records };
+  return saveStore(d);
+}
+
+const money = (n) => `$${n.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+function recordItem(r) {
+  const bits = [];
+  if (typeof r.km === 'number') bits.push(fmtKm(r.km));
+  if (r.shop) bits.push(r.shop);
+  if (typeof r.cost === 'number') bits.push(money(r.cost));
+  if (r.province || r.plate) bits.push([r.province, r.plate && `plate ${r.plate}`].filter(Boolean).join(' · '));
+  if (r.expiry) bits.push(`expires ${r.expiry}`);
+  return `<div class="item">
+      <div class="rec-head"><span class="meta">${esc(r.date)} · ${esc(TYPES[r.type])}</span>
+        <button type="button" class="btn2 danger" data-del="${esc(r.id)}">${pendingDelete === r.id ? 'Tap again to delete' : 'Delete'}</button></div>
+      ${r.work ? `<strong>${esc(r.work)}</strong>` : ''}
+      ${bits.length ? `<div class="meta">${esc(bits.join(' · '))}</div>` : ''}
+      ${r.notes ? `<p>${esc(r.notes)}</p>` : ''}
+    </div>`;
+}
+
+function renderRecords(message = '') {
+  const el = document.getElementById('records');
+  if (!el || !current.vin) return;
+  const records = recordsFor(current.vin);
+  const s = summarize(records, { today: today() });
+  const lines = [];
+  if (s.latestKm) lines.push(`Latest odometer: <strong>${esc(fmtKm(s.latestKm.km))}</strong> <span class="meta">(${esc(s.latestKm.date)})</span>`);
+  if (s.lastService) lines.push(`Last service: ${esc(s.lastService.date)}${s.lastService.work ? ` · ${esc(s.lastService.work)}` : ''}`);
+  if (s.serviceCount) lines.push(`${s.serviceCount} service${s.serviceCount === 1 ? '' : 's'} logged${s.serviceCost ? ` · ${esc(money(s.serviceCost))} total` : ''}`);
+  if (s.registrationStatus === 'expired') lines.push(`<span class="badge">Registration expired ${esc(s.latestRegistration.expiry)}</span>`);
+  else if (s.registrationStatus === 'expiring') lines.push(`<span class="badge">Registration expires ${esc(s.latestRegistration.expiry)}</span>`);
+  else if (s.registrationStatus === 'valid') lines.push(`<span class="ok">Registration valid until ${esc(s.latestRegistration.expiry)}</span>`);
+  for (const i of s.odometerIssues) lines.push(`<span class="badge">Odometer check</span> <span class="meta">${esc(i.message)} Check for a typo; otherwise ask why.</span>`);
+
+  el.innerHTML = `<h2><span>My records</span><span class="count">${records.length}</span></h2>
+    ${lines.length ? lines.map((l) => `<p class="status">${l}</p>`).join('') : '<p class="meta">Keep this vehicle’s service, odometer and registration history here. Nothing is logged yet.</p>'}
+    <details id="add" ${records.length ? '' : 'open'}><summary>Add a record</summary>
+      <form class="rec-form" id="rec-form" novalidate>
+        <label>Type<select name="type">${Object.entries(TYPES).map(([k, t]) => `<option value="${k}">${esc(t)}</option>`).join('')}</select></label>
+        <div class="row2">
+          <label>Date<input type="date" name="date" value="${today()}" max="${today()}"></label>
+          <label>Odometer (km)<input name="km" inputmode="numeric" placeholder="e.g. 74200"></label>
+        </div>
+        <div data-for="service" class="rec-form">
+          <label>Work done<input name="work" placeholder="e.g. Oil change, brakes"></label>
+          <div class="row2">
+            <label>Shop<input name="shop" placeholder="e.g. Ford dealer"></label>
+            <label>Cost ($)<input name="cost" inputmode="decimal" placeholder="0.00"></label>
+          </div>
+        </div>
+        <div data-for="registration" class="rec-form" hidden>
+          <div class="row2">
+            <label>Province / state<input name="province" placeholder="e.g. ON"></label>
+            <label>Plate<input name="plate"></label>
+          </div>
+          <label>Expires<input type="date" name="expiry"></label>
+        </div>
+        <label>Notes<textarea name="notes" rows="2"></textarea></label>
+        <p class="err" id="rec-err" hidden></p>
+        <button type="submit">Save record</button>
+      </form>
+    </details>
+    ${sortRecords(records).map(recordItem).join('')}
+    <div class="actions">
+      ${records.length ? '<button type="button" class="btn2" data-act="copy">Copy history</button><button type="button" class="btn2" data-act="backup">Save backup file</button>' : ''}
+      <button type="button" class="btn2" data-act="restore">Restore backup</button>
+      <input type="file" id="restore-file" accept="application/json,.json" hidden>
+    </div>
+    ${message ? `<p class="status ok">${esc(message)}</p>` : ''}
+    <p class="meta">Saved only on this device, not uploaded anywhere. Safari can clear data for websites you haven’t opened in a while, so add this page to your Home Screen and save a backup file now and then.</p>`;
+  syncFormType();
+}
+
+function syncFormType() {
+  const form = document.getElementById('rec-form');
+  if (!form) return;
+  const type = form.type.value;
+  form.querySelectorAll('[data-for]').forEach((d) => { d.hidden = d.dataset.for !== type; });
+}
+
+$('#out').addEventListener('change', (e) => {
+  if (e.target.name === 'type' && e.target.form?.id === 'rec-form') syncFormType();
+  if (e.target.id === 'restore-file' && e.target.files[0]) restoreBackup(e.target.files[0]);
+});
+
+$('#out').addEventListener('submit', (e) => {
+  if (e.target.id !== 'rec-form') return;
+  e.preventDefault();
+  const input = Object.fromEntries(new FormData(e.target));
+  const { record, errors } = makeRecord(input, { today: today() });
+  const err = document.getElementById('rec-err');
+  if (errors.length) { err.textContent = errors.join(' '); err.hidden = false; return; }
+  if (!setRecords(current.vin, [...recordsFor(current.vin), record])) {
+    err.textContent = "Couldn't save. This browser may be blocking storage (for example in Private Browsing)."; err.hidden = false; return;
+  }
+  renderRecords('Saved.');
+});
+
+$('#out').addEventListener('click', async (e) => {
+  const del = e.target.closest('[data-del]');
+  if (del) {
+    const id = del.dataset.del;
+    if (pendingDelete === id) {
+      pendingDelete = null;
+      setRecords(current.vin, recordsFor(current.vin).filter((r) => r.id !== id));
+      renderRecords('Deleted.');
+    } else {
+      // Only relabel the buttons, so anything typed in the form isn't wiped.
+      const label = (rid, text) => { const b = document.querySelector(`[data-del="${CSS.escape(rid)}"]`); if (b) b.textContent = text; };
+      if (pendingDelete) label(pendingDelete, 'Delete');
+      pendingDelete = id;
+      label(id, 'Tap again to delete');
+      setTimeout(() => { if (pendingDelete === id) { pendingDelete = null; label(id, 'Delete'); } }, 4000);
+    }
+    return;
+  }
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'copy') {
+    const text = historyText(current.vin, current.name, recordsFor(current.vin));
+    try { await navigator.clipboard.writeText(text); renderRecords('History copied. Paste it into a message or email.'); }
+    catch { renderRecords("Couldn't copy automatically on this device."); }
+  } else if (act === 'backup') {
+    const d = loadStore();
+    const blob = new Blob([JSON.stringify({ app: 'vin-report', version: 1, savedAt: new Date().toISOString(), vehicles: d.vehicles }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `vin-report-backup-${today()}.json`;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    renderRecords('Backup file saved. Keep it in Files or iCloud Drive.');
+  } else if (act === 'restore') {
+    document.getElementById('restore-file').click();
+  }
+});
+
+async function restoreBackup(file) {
+  try {
+    const incoming = parseBackup(await file.text());
+    const d = loadStore();
+    let n = 0;
+    for (const [vin, v] of Object.entries(incoming)) {
+      const prev = d.vehicles[vin] ?? { name: v.name, records: [] };
+      d.vehicles[vin] = { name: prev.name || v.name, records: mergeRecords(prev.records, v.records) };
+      n += v.records.length;
+    }
+    if (!saveStore(d)) throw new Error("This browser is blocking storage.");
+    renderRecords(`Restored ${n} record${n === 1 ? '' : 's'}.`);
+  } catch (err) {
+    renderRecords(`Couldn't restore: ${err.message}`);
+  }
+}
+
 async function lookup(vin) {
   $('#go').disabled = true;
   $('#out').innerHTML = card('Looking up…', '<p class="meta">Contacting NHTSA. This can take up to 20 seconds.</p>');
   try {
-    $('#out').innerHTML = render(await buildReport(vin, { include: { recallsCanada: false } }));
+    const report = await buildReport(vin, { include: { recallsCanada: false } });
+    const v = report.vehicle;
+    current = { vin: report.vinCheck.valid ? report.vin : null, name: v?.make ? [v.year, v.make, v.model, v.trim].filter(Boolean).join(' ') : '' };
+    pendingDelete = null;
+    $('#out').innerHTML = render(report);
+    renderRecords();
   } catch (e) {
     $('#out').innerHTML = card('Something went wrong', `<p class="err">${esc(e.message)}</p>`);
   } finally {
