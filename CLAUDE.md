@@ -35,6 +35,15 @@ The web page calls `buildReport` with `include: { recallsCanada: false }` and li
 
 The tests stub `fetch` (`stubFetch` in `test/report.test.js`) with minimal payloads in each API's documented response format. They check parsing and wiring, not live API behaviour. Pass `{ fetch }` to `buildReport` or the source functions to inject a stub.
 
+## Production standard
+
+The owner requires every app to follow `PRODUCTION_STANDARD.md`. This app's status against each item is in `docs/production-readiness.md`.
+
+- Before finishing any change, check the standard's items that the change touches, and update their rows in `docs/production-readiness.md` in the same commit.
+- Many items are N/A here because the app has no accounts, server, database, payments, email or AI model. Each N/A row names the missing capability. If a change adds one of those capabilities, re-check every row whose reason names it before the change ships.
+- Don't add machinery an item doesn't need here. Do close gaps that apply.
+- Items marked "Needs a person" stay that way until a person signs off. Don't mark them met yourself.
+
 ## Project constraints (from README)
 
 - Use only legitimate public data. Don't scrape carfax.ca or get around its paywall. Accident, lien, ownership and odometer history are deliberately out of scope, and the README lists where that data legitimately lives.
