@@ -118,6 +118,7 @@ p { margin: 0; }
 .hero { display: grid; gap: .875rem; justify-items: start; }
 .hero h1 { font: 700 2.5rem/1 var(--font-display); letter-spacing: -.01em; margin: 0; max-width: 18ch; }
 .lede { color: var(--ink-2); font-size: 1.0625rem; max-width: 36rem; }
+.hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; }
 .section-label { font: 600 .75rem/1.2 var(--font-body); text-transform: uppercase; letter-spacing: .09em; color: var(--ink-3); margin: 0 0 .75rem; }
 .vehicles { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
 .vehicle { width: 100%; display: flex; align-items: center; gap: .75rem; padding: .75rem .875rem; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow-sm); text-align: left; cursor: pointer; }
@@ -128,9 +129,9 @@ p { margin: 0; }
 .vehicle-aside { font-size: .8125rem; color: var(--ink-3); white-space: nowrap; }
 .vehicle > .ic { color: var(--ink-3); width: 1.1rem; }
 .spots { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .625rem; }
-.spot { display: grid; gap: .45rem; align-content: start; padding: .875rem; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
+.spot { display: grid; grid-template-columns: minmax(0, 1fr); gap: .45rem; align-content: start; padding: .875rem; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
 .spot .ic { width: 1.6rem; height: 1.6rem; color: var(--accent); stroke-width: 1.6; }
-.spot b { font-size: .9375rem; font-weight: 600; line-height: 1.3; }
+.spot b { font-size: .9375rem; font-weight: 600; line-height: 1.3; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; }
 .spot span { font-size: .8125rem; color: var(--ink-3); line-height: 1.4; }
 .spots-note { margin-top: .75rem; }
 .limits { padding: 1rem; border-radius: var(--r); background: var(--surface-2); border: 1px solid var(--line); display: grid; gap: .5rem; }
@@ -146,16 +147,18 @@ p { margin: 0; }
 .chip { display: inline-flex; align-items: center; gap: .3rem; padding: .3rem .7rem; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: .8125rem; font-weight: 500; color: var(--ink-2); }
 .chip .ic { width: .95rem; height: .95rem; }
 .chip.example { background: var(--warn-soft); border-color: transparent; color: var(--warn-ink); }
-.vin { display: flex; gap: .25rem; overflow-x: auto; scrollbar-width: none; padding-bottom: 1px; }
-.vin::-webkit-scrollbar { display: none; }
+/* Wraps rather than scrolls when it can't fit (large text settings): a scrolling strip with
+   nothing focusable can't be scrolled from the keyboard. */
+.vin { display: flex; flex-wrap: wrap; gap: .25rem; }
 .seg { flex: auto; display: grid; justify-items: center; gap: .3rem; padding: .45rem .25rem .38rem; border-radius: .5rem; background: var(--surface); border: 1px solid var(--line); }
 .seg b { font: 700 clamp(.8125rem, 3.9vw, 1.0625rem)/1 var(--font-mono); letter-spacing: .04em; }
-@media (max-width: 359px) { .vin { gap: .15rem; } .seg { padding-inline: .2rem; } .seg b { font-size: .75rem; } .seg span { font-size: .5625rem; letter-spacing: .04em; } }
 .seg span { font-size: .625rem; line-height: 1; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
 .seg.ok { border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
 .seg.ok span { color: var(--good-ink); }
 .seg.bad { border-color: var(--crit); }
 .seg.bad span { color: var(--crit-ink); }
+/* After the rules above, which it overrides. */
+@media (max-width: 359px) { .vin { gap: .15rem; } .seg { padding-inline: .2rem; } .seg b { font-size: .75rem; } .seg span { font-size: .5625rem; letter-spacing: .04em; } }
 .specs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .875rem 1rem; margin: 0; padding: .875rem 1rem; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
 .specs div { min-width: 0; }
 .specs dt { font-size: .6875rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
@@ -170,7 +173,7 @@ p { margin: 0; }
 .alert p { margin-top: .2rem; color: var(--ink); font-size: .9375rem; }
 .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .625rem; }
 @media (min-width: 640px) { .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-.tile { display: grid; grid-template-rows: auto auto 1fr; gap: .3rem; padding: .875rem; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-sm); color: inherit; text-decoration: none; transition: border-color .15s, transform .1s; }
+.tile { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; gap: .3rem; padding: .875rem; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-sm); color: inherit; text-decoration: none; transition: border-color .15s, transform .1s; }
 .tile:hover { border-color: var(--line-strong); }
 .tile:active { transform: scale(.985); }
 .tile-label { display: flex; align-items: flex-start; gap: .4rem; min-height: 2.1rem; font-size: .8125rem; font-weight: 500; line-height: 1.3; color: var(--ink-2); }
@@ -179,7 +182,7 @@ p { margin: 0; }
 .tile-value small { font-size: .9375rem; font-weight: 600; color: var(--ink-3); letter-spacing: 0; margin-left: .1rem; }
 .tile-sub { align-self: end; font-size: .75rem; color: var(--ink-3); }
 .tile .pill { align-self: end; }
-.pill { display: inline-flex; align-items: center; gap: .3rem; width: fit-content; max-width: 100%; padding: .22rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 650; line-height: 1.3; }
+.pill { display: inline-flex; align-items: center; gap: .3rem; width: fit-content; max-width: 100%; padding: .22rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 650; line-height: 1.3; overflow-wrap: anywhere; -webkit-hyphens: auto; hyphens: auto; }
 .pill .ic { width: .875rem; height: .875rem; stroke-width: 2.3; }
 .pill.crit { background: var(--crit-soft); color: var(--crit-ink); }
 .pill.warn { background: var(--warn-soft); color: var(--warn-ink); }
@@ -188,11 +191,12 @@ p { margin: 0; }
 
 /* Panels */
 .panel { padding: 1.125rem 1rem 1.25rem; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
-.panel-head { display: flex; align-items: center; gap: .65rem; margin-bottom: 1rem; }
+.panel-head { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; margin-bottom: 1rem; }
 .panel-icon { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; flex: none; border-radius: .7rem; background: var(--accent-soft); color: var(--accent-ink); }
 .panel-icon .ic { width: 1.2rem; height: 1.2rem; }
-.panel-head h2 { flex: 1; margin: 0; font: 700 1.5rem/1.05 var(--font-display); letter-spacing: .005em; }
-.panel-aside { font-size: .8125rem; font-weight: 600; color: var(--ink-3); white-space: nowrap; }
+.panel-head h2 { flex: 1; margin: 0; font: 700 1.5rem/1.05 var(--font-display); letter-spacing: .005em; overflow-wrap: break-word; }
+/* One line beside the heading when it fits; otherwise it moves below, and wraps only there. */
+.panel-aside { width: max-content; min-width: 0; font-size: .8125rem; font-weight: 600; color: var(--ink-3); }
 .empty-line { display: flex; gap: .5rem; align-items: flex-start; color: var(--ink-2); font-size: .9375rem; }
 .empty-line .ic { width: 1.15rem; height: 1.15rem; margin-top: .15rem; color: var(--good-ink); }
 .empty-line.info .ic { color: var(--ink-3); }
@@ -229,6 +233,7 @@ p { margin: 0; }
 .figure { display: grid; justify-items: center; gap: .1rem; padding: .7rem .25rem; border-radius: .75rem; background: var(--surface-2); }
 .figure b { font-size: 1.375rem; font-weight: 650; line-height: 1.1; }
 .figure span { font-size: .75rem; color: var(--ink-3); }
+@media (max-width: 359px) { .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .minor { margin: 0 0 .75rem; font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
 .bars { list-style: none; margin: 0; padding: 0; display: grid; gap: .8rem; }
 .bars li { display: grid; gap: .3rem; }
@@ -307,7 +312,7 @@ dialog.sheet::backdrop { background: var(--backdrop); }
 .segmented { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; margin: 0; padding: 3px; border: 0; border-radius: .8rem; background: var(--surface-3); }
 .segmented label { position: relative; }
 .segmented input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
-.segmented span { display: flex; align-items: center; justify-content: center; gap: .35rem; min-height: 2.4rem; border-radius: .65rem; font-size: .875rem; font-weight: 600; color: var(--ink-2); }
+.segmented label > span { display: flex; align-items: center; justify-content: center; gap: .35rem; min-height: 2.4rem; border-radius: .65rem; font-size: .875rem; font-weight: 600; color: var(--ink-2); }
 .segmented span .ic { width: 1rem; height: 1rem; }
 @media (max-width: 380px) { .segmented span .ic { display: none; } }
 .segmented input:checked + span { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
@@ -324,6 +329,10 @@ dialog.sheet::backdrop { background: var(--backdrop); }
 .affix .pre { left: .75rem; }
 .affix.has-suf input { padding-right: 2.5rem; }
 .affix.has-pre input { padding-left: 1.6rem; }
+.affix.has-unit input { padding-right: 4rem; }
+.field .unit-select { position: absolute; top: 50%; right: .3rem; transform: translateY(-50%); display: inline-block; width: auto; min-height: 2.25rem; padding: 0 .5rem; border: 0; border-left: 1px solid var(--line); border-radius: 0 .5rem .5rem 0; background: transparent; box-shadow: none; color: var(--ink-2); font: inherit; font-size: .875rem; cursor: pointer; }
+.field .unit-select:focus { background: transparent; box-shadow: none; }
+.field .unit-select:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
 .type-fields { display: grid; gap: .9rem; }
 .quick { display: flex; flex-wrap: wrap; gap: .375rem; }
@@ -349,3 +358,8 @@ dialog.sheet::backdrop { background: var(--backdrop); }
 .site-foot { display: grid; gap: .45rem; padding-block: 1.5rem calc(2rem + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); font-size: .8125rem; color: var(--ink-3); }
 .site-foot p { max-width: 40rem; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+/* French labels run longer: drop the type icons sooner, and let a long word such as
+   "Immatriculation" hyphenate (or break) rather than spill out of its segment. */
+.segmented label > span { text-align: center; -webkit-hyphens: auto; hyphens: auto; overflow-wrap: anywhere; }
+@media (max-width: 440px) { html[lang^="fr"] .segmented span .ic { display: none; } }

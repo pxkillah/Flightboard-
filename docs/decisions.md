@@ -55,7 +55,7 @@ instead of saying "no recalls". `scripts/live-check.js` runs daily against the r
 
 ## 8. Saved data is versioned; stored data is checked leniently (2026-10-15)
 
-The saved object carries `version` (now 2). `readStore` upgrades older versions on load.
+The saved object carries `version` (now 3). `readStore` upgrades older versions on load.
 Typed input and imported backups get strict validation (real dates, limits, whole cents);
 data this page already saved only needs the right shape, so a record an older version
 accepted isn't lost to a stricter rule. Unreadable data is copied aside before anything
@@ -66,4 +66,26 @@ so a reverted deploy can't drop fields it doesn't understand. Keep version chang
 
 Costs are stored as integer `costCents`, parsed from the typed digits, never through floating
 point. Typed amounts accept English and French Canadian formats (89.99, 89,99, 1 234,56).
-Every amount is assumed to be Canadian dollars; see `docs/production-readiness.md` (DATA-15).
+Every amount is Canadian dollars: the owner decided this on 2026-10-15 rather than store a
+currency per record. The form, CSV header and shared history say "CAD". If the app ever needs
+other currencies, add a currency field in a new store version (decision 8).
+
+## 10. Odometer units per reading, and US states (2026-10-15)
+
+The owner chose to plan for US vehicles. Each reading stores its own unit (`km` or `mi`), so a
+car bought across the border keeps its history as it was read; nothing is converted when
+saved. Rollback checks convert to km and allow 1 km of rounding. A vehicle remembers the unit
+of its latest reading to preselect the form. Regions store Canadian postal codes as before and
+US states as `US-` plus the code, so old data needs no change; the older "Outside Canada" value
+still reads. This is store version 3; version 2 data (km only) upgrades on load.
+
+## 11. English and French, all in one file (2026-10-15)
+
+Every string the page or `src/` shows lives in `src/i18n.js` in both languages, with
+plurals through `Intl.PluralRules` and Canadian formats for dates, numbers and money; place
+names live in `src/regions.js`. Tests fail if a key or placeholder is missing in either
+language, or if the page uses a key that doesn't exist. Text from NHTSA stays in English and is
+marked `lang="en"`, since translating it would mean sending it to a translation service
+(decision 3). The Transport Canada link stays on the English page because the French address
+couldn't be confirmed from here. The French was written by the AI that wrote the code and
+still needs a fluent speaker's review (UX-09).

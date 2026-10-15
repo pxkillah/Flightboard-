@@ -28,3 +28,18 @@ test('every file the page loads exists', () => {
   const imports = [...app.matchAll(/from '\.\/([^']+)'/g)].map((m) => m[1]);
   for (const f of [...refs, ...imports]) assert.ok(existsSync(new URL(`../${f}`, import.meta.url)), f);
 });
+
+test('every translation key the page uses exists in both languages', async () => {
+  const { MESSAGES } = await import('../src/i18n.js');
+  const keys = [
+    ...[...html.matchAll(/data-i18n(?:-html)?="([^"]+)"/g)].map((m) => m[1]),
+    ...[...html.matchAll(/data-i18n-attr="([^"]+)"/g)].flatMap((m) => m[1].split(',').map((p) => p.split(':')[1].trim())),
+    ...[...html.matchAll(/data-work-key="([^"]+)"/g)].map((m) => m[1]),
+    ...[...app.matchAll(/\bt\('([a-zA-Z0-9.]+)'/g)].map((m) => m[1]),
+  ];
+  assert.ok(keys.length > 100);
+  for (const k of new Set(keys)) {
+    assert.ok(k in MESSAGES.en, `missing English text for ${k}`);
+    assert.ok(k in MESSAGES.fr, `missing French text for ${k}`);
+  }
+});

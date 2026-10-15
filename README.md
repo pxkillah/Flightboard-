@@ -19,7 +19,14 @@ The page also has **My records**: an owner-kept service, odometer and registrati
 It warns when an odometer reading is lower than an earlier one and when a registration is expired or
 expires within 30 days, and it can copy the history as text or save and restore a backup file.
 Records are stored only in that browser (`localStorage`) and never uploaded. They are owner-entered
-and not verified, and the shared history text says so.
+and not verified, and the shared history text says so. Each odometer reading is entered in km or
+miles and keeps its unit; the rollback check converts between them. Registrations can be in a
+Canadian province or territory, or a US state. Costs are in Canadian dollars.
+
+The page is in **English and French** (Canada). It follows the device's language, and the
+switch on the home page or in the footer is remembered; `?lang=fr` or `?lang=en` in the address picks
+one. Dates, numbers, money and the CSV export follow the language. Text that comes from NHTSA,
+such as recall summaries, stays in English.
 
 **Send feedback** (in the footer) opens a short form for a problem, an idea or wrong data. The page
 doesn't send it anywhere itself. It opens a pre-filled GitHub issue that the user reviews and posts,
@@ -107,3 +114,7 @@ npm test
 
 The tests run offline against stubbed responses in each API's documented format. CI runs
 them on Node 22 and 24 for every pull request.
+
+## Licence
+
+MIT, copyright pxkillah. See `LICENSE`.
