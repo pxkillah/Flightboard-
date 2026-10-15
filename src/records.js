@@ -190,6 +190,7 @@ export function historyText(vin, vehicleName, records) {
   if (s.latestKm) L.push(`Latest odometer reading: ${fmtKm(s.latestKm.km)} (${s.latestKm.date})`);
   if (s.highestKm) L.push(`Highest reading: ${fmtKm(s.highestKm.km)} (${s.highestKm.date})`);
   if (s.serviceCount) L.push(`Services logged: ${s.serviceCount}${s.serviceCostCents ? `, total ${fmtCents(s.serviceCostCents)}` : ''}`);
+  if (records.some((r) => typeof r.costCents === 'number')) L.push('Costs are in Canadian dollars.');
   for (const i of s.odometerIssues) L.push(`Odometer check: ${i.message}`);
   L.push('');
   for (const r of sortRecords(records)) {
@@ -215,7 +216,7 @@ export function recordsCsv(records) {
     if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const head = ['Date', 'Type', 'Odometer (km)', 'Work', 'Shop', 'Cost', 'Province', 'Plate', 'Expires', 'Notes'];
+  const head = ['Date', 'Type', 'Odometer (km)', 'Work', 'Shop', 'Cost (CAD)', 'Province', 'Plate', 'Expires', 'Notes'];
   const rows = sortRecords(records).map((r) => [r.date, TYPES[r.type], r.km, r.work, r.shop,
     typeof r.costCents === 'number' ? (r.costCents / 100).toFixed(2) : '', r.province, r.plate, r.expiry, r.notes]);
   return `﻿${[head, ...rows].map((row) => row.map(cell).join(',')).join('\r\n')}\r\n`;

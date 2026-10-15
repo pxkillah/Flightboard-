@@ -53,6 +53,7 @@ test('history text lists everything and labels it owner-entered', () => {
   const t = historyText('1FTBR1X87LKA22229', '2020 FORD Transit', [mk({ type: 'service', date: '2026-03-01', km: 70000, work: 'Oil change', shop: 'Ford', cost: 90 })]);
   assert.match(t, /2026-03-01 · Service · 70,000 km · Oil change · at Ford · \$90\.00/);
   assert.match(t, /not independently verified/);
+  assert.match(t, /Costs are in Canadian dollars\./);
 });
 
 test('backup round trip ignores junk and merges by id', () => {
