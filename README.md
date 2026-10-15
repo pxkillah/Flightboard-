@@ -1,7 +1,7 @@
 # vehicle-report
 
 A command-line VIN lookup that builds a Carfax-style vehicle report from **free, public
-government data**. It needs no API keys and has no dependencies (Node ≥ 18).
+government data**. It needs no API keys and has no dependencies (Node ≥ 22).
 
 ```
 $ node bin/vehicle-report.js 1HGCM82633A004352
@@ -10,7 +10,7 @@ $ node bin/vehicle-report.js 1HGCM82633A004352 --json
 
 ## Web page (works on a phone)
 
-`index.html` is the same report as a mobile-friendly web page. It runs entirely in the browser
+`index.html` (with `app.js` and `app.css`) is the same report as a mobile-friendly web page. It runs entirely in the browser
 and calls the government APIs directly, so it needs no server. To host it free with GitHub Pages:
 Settings → Pages → Source "Deploy from a branch" → `main` / `(root)` → Save. The page is then at
 `https://<user>.github.io/<repo>/`, and `?vin=<VIN>` in the URL runs a lookup straight away.

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`vehicle-report` (the repo name "Flightboard-" is unrelated to its contents) builds a Carfax-style VIN report from free public government APIs: NHTSA vPIC, NHTSA recalls, complaints and NCAP ratings, and Transport Canada recalls. It ships as a Node CLI and as a single static web page. It has **no dependencies, no build step and no API keys**, and needs Node ≥ 18 (ES modules, global `fetch`, `node:test`).
+`vehicle-report` (the repo name "Flightboard-" is unrelated to its contents) builds a Carfax-style VIN report from free public government APIs: NHTSA vPIC, NHTSA recalls, complaints and NCAP ratings, and Transport Canada recalls. It ships as a Node CLI and as a single static web page. It has **no dependencies, no build step and no API keys**, and needs Node ≥ 22 (ES modules, global `fetch`, `node:test`). CI tests Node 22 and 24.
 
 ## Commands
 
@@ -13,23 +13,24 @@ npm test                                   # all tests (node --test test/*.test.
 node --test test/recallMatch.test.js       # one test file
 node --test --test-name-pattern="<regex>" test/*.test.js   # tests matching a name
 node bin/vehicle-report.js <VIN> [--json] [--force] [--no-ratings] [--no-complaints]
+node scripts/live-check.js                 # real NHTSA calls; also runs daily in GitHub Actions
 ```
 
-There is no linter or formatter configured. To try the web page, serve the repo root over HTTP (for example `python3 -m http.server`), because ES module imports don't load from `file://`. `?vin=<VIN>` runs a lookup on load. GitHub Pages serves `main` from the root.
+There is no linter or formatter configured. `.github/workflows/ci.yml` runs `npm test` on pushes to main and on pull requests. To try the web page, serve the repo root over HTTP (for example `python3 -m http.server`), because ES module imports don't load from `file://`. `?vin=<VIN>` runs a lookup on load. GitHub Pages serves `main` from the root.
 
 ## Architecture
 
-The same modules in `src/` run in both Node and the browser. `index.html` imports them directly with `<script type="module">` (`./src/report.js`, `./src/vin.js`, `./src/records.js`, `./src/feedback.js`), so `src/` must stay browser-compatible: no Node built-ins, no bare package imports.
+The same modules in `src/` run in both Node and the browser. The page is `index.html` (markup), `app.css` and `app.js`; `app.js` imports the `src/` modules directly as ES modules, so `src/` must stay browser-compatible: no Node built-ins, no bare package imports. `index.html` sets a Content-Security-Policy meta tag (GitHub Pages can't send headers): scripts only from the site itself, network only to the two NHTSA hosts. So no inline `<script>`, no `on*=` attributes and no third-party URLs; `test/page.test.js` checks this.
 
 - `src/report.js`: `buildReport(vin, { fetch, include, force })` validates the VIN, decodes it with vPIC (which supplies year, make and model), then fetches each section in parallel. **Each section fails on its own**: an error goes into `report.errors[section]` and does not fail the whole report. `include.<section> === false` skips a section. `formatReport` renders the CLI text.
 - `src/sources/*.js`: one module per API. Each exposes pure `parse*` functions, which the tests exercise, alongside fetch wrappers.
 - `src/http.js`: `getJson` handles retries with backoff on 5xx/429/network errors, the timeout, and 404 → `null`. It omits `User-Agent` in the browser so requests don't trigger a CORS preflight.
 - `src/recallMatch.js`: recalls are looked up by year/make/model, not by VIN. `recallMismatch` compares each recall's text with the decoded vehicle (drive type, engine, fuel, roof height) and returns reasons it probably doesn't apply. Mismatched recalls are **flagged (`mismatch`), never dropped**, and a check only fires on an explicit contradiction.
-- `src/records.js`: the pure logic behind the web page's "My records" log (service, odometer and registration entries per VIN): validation, odometer-rollback and registration-expiry warnings, history text, and backup parse/merge. Storage is the caller's job: `index.html` keeps it in `localStorage`, and nothing is uploaded.
+- `src/records.js`: the pure logic behind the web page's "My records" log (service, odometer and registration entries per VIN): validation, odometer-rollback and registration-expiry warnings, history text, and backup parse/merge. Storage is the caller's job: `app.js` keeps it in `localStorage` under `vin-report:v1` (the data carries its own `version`; `readStore` upgrades older data), and nothing is uploaded. Costs are integer cents.
 - `src/feedback.js`: `feedbackUrl` validates the feedback form and builds a pre-filled GitHub new-issue URL. The page opens that URL rather than posting feedback itself, which keeps the no-requests-except-NHTSA rule.
 - `src/vin.js`: VIN normalization and the check-digit calculation (49 CFR 565).
 
-The web page calls `buildReport` with `include: { recallsCanada: false }` and links to Transport Canada instead of fetching it. The README says the page makes no requests except to NHTSA, and the fonts in `fonts/` are self-hosted to keep it that way. Don't add CDN or third-party requests to `index.html`. `manifest.webmanifest` and `icons/` make the page installable as a Home Screen app.
+The web page calls `buildReport` with `include: { recallsCanada: false }` and links to Transport Canada instead of fetching it. The README says the page makes no requests except to NHTSA, and the fonts in `fonts/` are self-hosted to keep it that way. Don't add CDN or third-party requests to the page. `manifest.webmanifest` and `icons/` make the page installable as a Home Screen app.
 
 ## Tests
 

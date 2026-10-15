@@ -1,0 +1,21 @@
+# Calls the real NHTSA APIs once a day. A failed run means NHTSA is down or changed its
+# format; see docs/runbook.md. GitHub emails the repo owner when a scheduled run fails.
+name: Live NHTSA check
+
+on:
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: node scripts/live-check.js

@@ -5,6 +5,6 @@
   "type": "module",
   "bin": { "vehicle-report": "bin/vehicle-report.js" },
   "scripts": { "test": "node --test test/*.test.js" },
-  "engines": { "node": ">=18" },
+  "engines": { "node": ">=22" },
   "license": "MIT"
 }
