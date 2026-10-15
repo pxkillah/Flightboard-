@@ -21,6 +21,10 @@ expires within 30 days, and it can copy the history as text or save and restore 
 Records are stored only in that browser (`localStorage`) and never uploaded. They are owner-entered
 and not verified, and the shared history text says so.
 
+**Send feedback** (in the footer) opens a short form for a problem, an idea or wrong data. The page
+doesn't send it anywhere itself. It opens a pre-filled GitHub issue that the user reviews and posts,
+which needs a GitHub account. The VIN is included only if the user ticks the box.
+
 It installs as a Home Screen app (Safari: Share → Add to Home Screen), using
 `manifest.webmanifest` and the icons in `icons/`. The page makes no requests except to NHTSA: the
 fonts are self-hosted in `fonts/` (Barlow Semi Condensed and B612 Mono, both under the SIL Open

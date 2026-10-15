@@ -349,6 +349,10 @@ dialog.sheet::backdrop { background: var(--backdrop); }
 .quick button { padding: .3rem .7rem; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-2); font-size: .8125rem; cursor: pointer; }
 .form-error { padding: .55rem .75rem; border-radius: .6rem; background: var(--crit-soft); color: var(--crit-ink); font-size: .875rem; }
 .sheet-actions { display: grid; grid-template-columns: 1fr 2fr; gap: .5rem; padding-top: .25rem; }
+.check { display: flex; align-items: center; gap: .55rem; font-size: .9375rem; color: var(--ink-2); }
+.check input { width: 1.15rem; height: 1.15rem; margin: 0; accent-color: var(--accent); }
+.sheet-note { margin: 0; font-size: .8125rem; color: var(--ink-3); }
+.site-foot .btn { justify-self: start; }
 
 /* Loading, toast, footer */
 .sk { border-radius: .5rem; background: linear-gradient(90deg, var(--surface-3), var(--surface-2) 50%, var(--surface-3)); background-size: 200% 100%; }
@@ -443,6 +447,7 @@ dialog.sheet::backdrop { background: var(--backdrop); }
   <p>Vehicle details, U.S. recalls, owner complaints and crash ratings come from NHTSA. Recalls are listed by model, so confirm what applies to a specific vehicle with a dealer.</p>
   <p>Records you add are saved on this device only.</p>
   <p><a href="https://github.com/pxkillah/Flightboard-" target="_blank" rel="noopener">Source code and data notes</a></p>
+  <button type="button" class="btn secondary small" id="feedback-btn"><svg class="ic" aria-hidden="true"><use href="#i-chat"></use></svg>Send feedback</button>
 </footer>
 
 <dialog class="sheet" id="sheet" aria-labelledby="sheet-title">
@@ -502,12 +507,37 @@ dialog.sheet::backdrop { background: var(--backdrop); }
   </form>
 </dialog>
 
+<dialog class="sheet" id="fb-sheet" aria-labelledby="fb-title">
+  <form id="fb-form" novalidate>
+    <div class="grabber" aria-hidden="true"></div>
+    <div class="sheet-head">
+      <h2 id="fb-title">Send feedback</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"></use></svg></button>
+    </div>
+    <fieldset class="segmented">
+      <legend class="sr">Feedback type</legend>
+      <label><input type="radio" name="kind" value="problem" checked><span><svg class="ic" aria-hidden="true"><use href="#i-alert"></use></svg>Problem</span></label>
+      <label><input type="radio" name="kind" value="idea"><span><svg class="ic" aria-hidden="true"><use href="#i-star"></use></svg>Idea</span></label>
+      <label><input type="radio" name="kind" value="data"><span><svg class="ic" aria-hidden="true"><use href="#i-info"></use></svg>Wrong data</span></label>
+    </fieldset>
+    <label class="field"><span class="field-label">Your feedback</span><textarea name="message" id="fb-message" rows="5" maxlength="1500" placeholder="What happened, or what would make this better?"></textarea></label>
+    <label class="check" id="fb-vin-row" hidden><input type="checkbox" name="includeVin" id="fb-vin"><span>Include the VIN <b id="fb-vin-text"></b></span></label>
+    <p class="sheet-note">This opens a pre-filled issue on GitHub, where you can review it before posting. Posting needs a free GitHub account, and issues there are public.</p>
+    <p class="form-error" id="fb-err" role="alert" hidden></p>
+    <div class="sheet-actions">
+      <button type="button" class="btn ghost" data-close>Cancel</button>
+      <button type="submit" class="btn primary"><svg class="ic" aria-hidden="true"><use href="#i-external"></use></svg>Continue on GitHub</button>
+    </div>
+  </form>
+</dialog>
+
 <input type="file" id="restore-file" accept="application/json,.json" hidden>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script type="module">
 import { buildReport } from './src/report.js';
 import { validateVin, normalizeVin } from './src/vin.js';
+import { feedbackUrl } from './src/feedback.js';
 import { makeRecord, sortRecords, summarize, historyText, parseBackup, mergeRecords, fmtKm, localDate } from './src/records.js';
 
 const $ = (s, root = document) => root.querySelector(s);
@@ -1127,6 +1157,34 @@ form.addEventListener('submit', (e) => {
   toast('Record saved');
 });
 
+// ---------- Feedback sheet ----------
+const fbSheet = $('#fb-sheet');
+const fbForm = $('#fb-form');
+function openFeedback() {
+  fbForm.reset();
+  $('#fb-err').hidden = true;
+  // Offer the VIN only while a report is showing, and leave it unticked: issues are public.
+  const vin = $('#report').hidden ? null : current.vin;
+  $('#fb-vin-row').hidden = !vin;
+  $('#fb-vin-text').textContent = vin ?? '';
+  if (typeof fbSheet.showModal === 'function') fbSheet.showModal(); else fbSheet.setAttribute('open', '');
+  $('#fb-message').focus();
+}
+function closeFeedback() { if (typeof fbSheet.close === 'function') fbSheet.close(); else fbSheet.removeAttribute('open'); }
+$('#feedback-btn').addEventListener('click', openFeedback);
+fbSheet.addEventListener('click', (e) => { if (e.target === fbSheet) closeFeedback(); });
+fbForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const err = $('#fb-err');
+  const f = fbForm.elements;
+  const vin = !$('#fb-vin-row').hidden && f.includeVin.checked ? current.vin : undefined;
+  const { url, errors } = feedbackUrl({ kind: f.kind.value, message: f.message.value, vin });
+  if (errors.length) { err.textContent = errors.join(' '); err.hidden = false; return; }
+  window.open(url, '_blank', 'noopener');
+  closeFeedback();
+  toast('Opened GitHub in a new tab');
+});
+
 // ---------- Copy, backup, restore ----------
 async function copyHistory() {
   const text = historyText(current.vin, current.name, recordsFor(current.vin));
@@ -1190,7 +1248,7 @@ document.addEventListener('click', (e) => {
   else if (t.matches('[data-force]')) lookup(input.value, { force: true });
   else if (t.matches('[data-retry]')) lookup(current.vin ?? input.value, { push: false, example: current.example });
   else if (t.matches('[data-add]')) openSheet();
-  else if (t.matches('[data-close]')) closeSheet();
+  else if (t.matches('[data-close]')) (fbSheet.contains(t) ? closeFeedback : closeSheet)();
   else if (t.matches('[data-work]')) { const w = form.elements.work; w.value = w.value ? `${w.value}, ${t.dataset.work}` : t.dataset.work; }
   else if (t.matches('[data-more]')) {
     const clamped = t.previousElementSibling.classList.toggle('clamp');
