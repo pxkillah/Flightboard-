@@ -7,7 +7,8 @@ deploy.
 ## The daily live check failed
 
 `.github/workflows/live-check.yml` runs `scripts/live-check.js`, which builds a real report
-for NHTSA's sample VIN. GitHub emails the repo owner when it fails. Open the failed run;
+for NHTSA's sample VIN, every day and on pull requests that change the code that talks to
+NHTSA. GitHub emails the repo owner when a scheduled run fails. Open the failed run;
 each `::error::` line names the section and the kind of failure:
 
 | Kind | Meaning | What to do |

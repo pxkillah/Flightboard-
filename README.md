@@ -95,7 +95,7 @@ python3 -m http.server 8000                # then open http://localhost:8000
 
 The page has to be served over HTTP because browsers don't load ES modules from `file://`.
 `?vin=<VIN>` in the address runs a lookup straight away. `node scripts/live-check.js` calls the
-real NHTSA APIs and is also run daily by GitHub Actions. Architecture decisions are in
+real NHTSA APIs; GitHub Actions runs it daily and on pull requests that change the NHTSA code. Architecture decisions are in
 `docs/decisions.md`, incident steps in `docs/runbook.md`, and the status against the
 production standard in `docs/production-readiness.md`.
 

@@ -13,7 +13,7 @@ npm test                                   # all tests (node --test test/*.test.
 node --test test/recallMatch.test.js       # one test file
 node --test --test-name-pattern="<regex>" test/*.test.js   # tests matching a name
 node bin/vehicle-report.js <VIN> [--json] [--force] [--no-ratings] [--no-complaints]
-node scripts/live-check.js                 # real NHTSA calls; also runs daily in GitHub Actions
+node scripts/live-check.js                 # real NHTSA calls; runs daily in GitHub Actions and on PRs that change NHTSA code
 ```
 
 There is no linter or formatter configured. `.github/workflows/ci.yml` runs `npm test` on pushes to main and on pull requests. Work on a branch and open a pull request: GitHub Pages publishes `main` to visitors as soon as it changes. To try the web page, serve the repo root over HTTP (for example `python3 -m http.server`), because ES module imports don't load from `file://`. `?vin=<VIN>` runs a lookup on load. GitHub Pages serves `main` from the root.
