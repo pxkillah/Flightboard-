@@ -108,6 +108,8 @@ To be more than a website in a wrapper (Apple guideline 4.2), and to work proper
 - backups and spreadsheets go through the share sheet, because a web view can't download;
 - saved data is copied to the phone's settings store, because iOS can clear a web view's
   storage when space runs low.
+- the store's own rating card, asked once after the third saved record (most downloads come
+  from store search, which ranks by ratings); the phone decides whether to show it.
 
 Costs: Capacitor and its plugins need updating every year to keep up with Apple's and
 Google's requirements, and store releases can't be rolled back instantly (`docs/runbook.md`).

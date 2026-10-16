@@ -72,3 +72,9 @@ export async function scanBarcodes() {
     throw e;
   }
 }
+
+// Shows the App Store or Google Play rating card in the app. The system decides whether it
+// appears and never says, so there's nothing to report back.
+export function askForRating() {
+  if (isApp()) call('InAppReview', 'requestReview').catch(() => { /* not shown; that's fine */ });
+}

@@ -8,6 +8,7 @@ Changes people using VIN Report would notice. Newest first.
   - a scan button that reads the VIN barcode on the door frame or windshield;
   - backups and spreadsheets that open the share sheet (Files, AirDrop, email…);
   - saved records that survive iOS clearing the app's web storage.
+  - after your third saved record, the app may ask you to rate it (once, then at most every 4 months).
 - The app is now called **Car Report**.
 - Send feedback opens an email instead of a GitHub issue.
 - A privacy policy page, in English and French, linked from the footer.

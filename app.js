@@ -5,7 +5,7 @@ import { recallMismatch } from './src/recallMatch.js';
 import { makeRecord, sortRecords, summarize, historyText, parseBackup, mergeRecords, recordsCsv, readingOf, convert, fmtReading, localDate, readStore, backupText, pruneLookups, MAX_BACKUP_BYTES } from './src/records.js';
 import { t as translate, pickLang, fmtNumber, fmtDate, fmtMonthYear, fmtDistance, fmtMoney, LOCALE } from './src/i18n.js';
 import { regionName, regionOptions } from './src/regions.js';
-import { isApp, saveFile, restoreSaved, mirrorSaved, canScan, scanBarcodes } from './native.js';
+import { isApp, saveFile, restoreSaved, mirrorSaved, canScan, scanBarcodes, askForRating } from './native.js';
 
 const $ = (s, root = document) => root.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -788,7 +788,26 @@ form.addEventListener('submit', (e) => {
   toast(t('toast.saved'));
   // Asks the browser not to clear this site's storage on its own; harmless if it says no.
   navigator.storage?.persist?.().catch(() => {});
+  maybeAskForRating();
 });
+
+// In the app, asks for a store rating once someone has found it useful: after their third
+// saved record, then at most every 4 months. The phone decides whether to actually show it
+// (iOS shows it at most three times a year), so this can't nag. The website never asks.
+const RATING_KEY = `${STORE}:rating`;
+const RATING_RECORDS = 3;
+const RATING_GAP_MS = 120 * 864e5;
+function maybeAskForRating() {
+  if (!isApp()) return;
+  const n = Object.values(loadStore().vehicles).reduce((sum, v) => sum + (v.records?.length ?? 0), 0);
+  if (n < RATING_RECORDS) return;
+  let last = 0;
+  try { last = Number(localStorage.getItem(RATING_KEY)) || 0; } catch { /* storage blocked */ }
+  if (Date.now() - last < RATING_GAP_MS) return;
+  try { localStorage.setItem(RATING_KEY, String(Date.now())); } catch { return; }
+  // After the sheet has closed and the toast has been read.
+  setTimeout(askForRating, 1500);
+}
 
 // ---------- Feedback sheet ----------
 const fbSheet = $('#fb-sheet');
