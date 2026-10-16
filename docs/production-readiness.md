@@ -4,7 +4,7 @@ Status of this app against every item in `PRODUCTION_STANDARD.md`. Update the ro
 
 Last full review: 2026-10-15.
 
-**160 items:** 61 met, 2 gaps, 26 need a person, 71 don't apply (each says why).
+**160 items:** 62 met, 2 gaps, 25 need a person, 71 don't apply (each says why).
 
 ## What the owner needs to do
 
@@ -14,7 +14,6 @@ These need a decision or a setting only the owner can change. The details are in
 - **SEC-02** Every key that was ever pasted into a config file or chat has been rotated
 - **SEC-03** Every installed package confirmed to exist and to be the one you meant
 - **SEC-11** Least-privilege access for everyone, including AI agents holding production credentials
-- **SEC-15** A vulnerability disclosure process for the day a stranger emails you one
 - **COMP-08** Quarterly access reviews that someone signs off on
 - **COMP-09** Terms and a privacy policy that match what the code actually does
 - **COMP-10** Every account, domain and repo in the company's name, not the prototype builder's
@@ -111,7 +110,7 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 | SEC-12 | Logs that record who did what, without passwords, tokens or card numbers | N/A | No server, accounts or logs; deploys are attributed by git history. |
 | SEC-13 | A penetration test before the enterprise customer's security team runs their own | N/A | No business customers and no server-side attack surface. The client side was tested for XSS (SEC-06) and the CSP (SEC-09). Re-check if the app gains a server or a business customer. |
 | SEC-14 | Answers to the enterprise security questionnaire, with evidence behind each one | N/A | Free public tool; no buyer sends a questionnaire. Re-check if it's offered to an organisation. |
-| SEC-15 | A vulnerability disclosure process for the day a stranger emails you one | Needs a person | `SECURITY.md` explains how to report privately. GitHub private vulnerability reporting is on (verified 2026-10-15) but only works while the repository is public; after that, reports go to the support email. **Owner:** set up the support address (`SUPPORT_EMAIL`, docs/app-release.md) before making the repository private. |
+| SEC-15 | A vulnerability disclosure process for the day a stranger emails you one | Met | `SECURITY.md` asks for private reports by email to creport88@gmail.com, the support inbox the owner set up (2026-10-16), which also appears on the privacy and support pages. GitHub private vulnerability reporting is on too (verified 2026-10-15), while the repository is public. |
 | SEC-16 | A plan for the day a laptop with production access is stolen | Met | "If a device with access is lost or stolen" checklist in `SECURITY.md`, now including the Apple and Google accounts and the Android upload key. Owner should read it once so it's familiar. |
 
 ## Compliance (COMP)
@@ -126,7 +125,7 @@ Testing, review and judgment that an AI agent can help with but can't sign off.
 | COMP-06 | GDPR deletion requests that reach every table, backup and log | Met | Everything the app keeps is on the person's device and deletable there (Remove from this device; Erase all in the footer, which also clears the app's copy; uninstalling). Feedback arrives as email; the owner deletes it on request. |
 | COMP-07 | Data residency for the customer whose contract says EU only | N/A | No server-side storage or contracts. The only thing that leaves the device is the VIN, sent to NHTSA (US) at the person's request; feedback travels by the person's own email provider. |
 | COMP-08 | Quarterly access reviews that someone signs off on | Needs a person | Production access: merging to `main` (website) and publishing app builds. That's the owner (sole admin), Claude sessions using the owner's GitHub connection, and whoever is added to App Store Connect or Play Console. **Owner:** once a quarter, review GitHub collaborators, GitHub Apps and OAuth apps (including Claude), deploy keys and tokens, the "Protect main" ruleset, and the users in App Store Connect and Play Console; note the date and outcome here. |
-| COMP-09 | Terms and a privacy policy that match what the code actually does | Needs a person | `privacy.html` is the privacy policy (English and French), written from what the code does and linked from the app's footer; `support.html` is the support page; the README has a Privacy section; the CLI credits Transport Canada's Open Government Licence. `LICENSE`: MIT, copyright pxkillah (owner's choice, 2026-10-15). **Owner:** create the support email (it's the contact for privacy requests), then host the two pages over HTTPS for the store listings (docs/app-release.md). |
+| COMP-09 | Terms and a privacy policy that match what the code actually does | Needs a person | `privacy.html` is the privacy policy (English and French), written from what the code does and linked from the app's footer; `support.html` is the support page; the README has a Privacy section; the CLI credits Transport Canada's Open Government Licence. `LICENSE`: MIT, copyright pxkillah (owner's choice, 2026-10-15). The contact for privacy requests is creport88@gmail.com (owner, 2026-10-16). **Owner:** host the two pages over HTTPS and put their addresses in both store listings (docs/app-release.md). |
 | COMP-10 | Every account, domain and repo in the company's name, not the prototype builder's | Needs a person | The repo, the website and the store accounts are personal (pxkillah); no custom domain. An individual Apple developer account shows your legal name as the seller in the App Store. **Owner decides:** enrol in Apple and Google as an individual or as an organisation (needs a D-U-N-S number, shows the company name, and is easier to hand over later), and say which here. Moving the website strands saved records unless people back up and restore. |
 
 ## Infrastructure and delivery (OPS)

@@ -3,10 +3,9 @@
 import { normalizeVin } from './vin.js';
 import { t } from './i18n.js';
 
-// Feedback, support and privacy requests. Empty until the owner sets up the address; the
-// page hides Send feedback while it's empty, and mobile/scripts/check-release.js refuses
-// to ship without it.
-export const SUPPORT_EMAIL = '';
+// Feedback, support and privacy requests (the owner's support inbox). If it's ever emptied,
+// the page hides Send feedback and mobile/scripts/check-release.js refuses to ship.
+export const SUPPORT_EMAIL = 'creport88@gmail.com';
 
 export const KINDS = {
   problem: { label: 'Problem', tag: 'Problem' },

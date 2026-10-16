@@ -5,7 +5,7 @@ Copy these into App Store Connect and Play Console. Screenshots are in `screensh
 in the order to upload them, in English (`en-*`) and French (`fr-*`). They show the real app
 with sample records.
 
-Replace `SUPPORT_EMAIL` and the two page addresses once they exist (docs/app-release.md).
+Support email: **creport88@gmail.com**. Replace the two page addresses once the pages are hosted (docs/app-release.md).
 
 ## Names and categories
 

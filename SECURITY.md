@@ -2,9 +2,8 @@
 
 ## Reporting a vulnerability
 
-Please report security problems privately by email to the support address in
-`src/feedback.js` (`SUPPORT_EMAIL`, also on the app's privacy page), with "Security" in the
-subject. While the repository is public, GitHub's private reporting also works: the
+Please report security problems privately by email to **creport88@gmail.com**, with "Security" in
+the subject. While the repository is public, GitHub's private reporting also works: the
 **Security** tab → **Report a vulnerability**.
 
 Expect a first reply within 7 days. Only the current app versions in the App Store and

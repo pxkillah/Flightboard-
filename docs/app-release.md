@@ -12,8 +12,9 @@ The store text, privacy answers and screenshots are in `mobile/store/`.
 2. **Google Play Console** (US$25 once): sign up at play.google.com/console. Google verifies
    your identity. New personal accounts must run a **closed test with at least 12 testers for
    14 days** before the app can go public, so start that early.
-3. **Support email**: create the address, then ask Claude to put it in `src/feedback.js`
-   (`SUPPORT_EMAIL`), `privacy.html` and `support.html` (replacing `SUPPORT_EMAIL_HERE`).
+3. **Support email**: creport88@gmail.com (done 2026-10-16). It's in `src/feedback.js`
+   (`SUPPORT_EMAIL`), `privacy.html` and `support.html`. Use the same address as the contact
+   email in App Store Connect and Play Console.
 4. **Host the two pages**: upload `privacy.html` and `support.html` from the repo root to any
    website with HTTPS. Their addresses go in both store listings. They are self-contained:
    nothing else needs uploading.
