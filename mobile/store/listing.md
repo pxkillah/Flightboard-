@@ -14,8 +14,9 @@ Replace `SUPPORT_EMAIL` and the two page addresses once they exist (docs/app-rel
 | App name (30 max) | Car Report | Car Report |
 | iOS subtitle (30 max) | VIN check, recalls, logbook | NIV, rappels et carnet |
 | Google short description (80 max) | Check any VIN for recalls, complaints and crash ratings. Keep your car's log. | Rappels, plaintes et cotes de sécurité de tout NIV, et le carnet de votre auto. |
-| iOS keywords (100 max) | vin,decoder,recall,nhtsa,carfax,used car,odometer,maintenance,service log,crash rating,safety | niv,décodeur,rappel,nhtsa,auto usagée,odomètre,entretien,carnet,sécurité,véhicule |
+| iOS keywords (100 max) | vin,decoder,recall,nhtsa,used car,car history,odometer,maintenance,service log,crash rating,safety | niv,décodeur,rappel,nhtsa,auto usagée,odomètre,entretien,carnet,sécurité,véhicule |
 
+- Keywords and the subtitle must not name other companies or apps (Apple guideline 2.3.7), so no "Carfax" there; the description may mention it only in the not-affiliated sentence.
 - App Store category: Utilities (secondary: Reference). Google Play category: Auto & Vehicles.
 - Price: free. No in-app purchases, no ads.
 - Privacy policy URL: the hosted `privacy.html`. Support URL: the hosted `support.html`.
