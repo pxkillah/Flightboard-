@@ -1,0 +1,28 @@
+{
+  "name": "car-report-mobile",
+  "private": true,
+  "description": "iOS and Android app for Car Report: the web page in the repo root, bundled with Capacitor.",
+  "type": "module",
+  "scripts": {
+    "copy": "node scripts/copy-web.js",
+    "sync": "node scripts/copy-web.js && cap sync",
+    "check-release": "node scripts/check-release.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@capacitor-community/in-app-review": "8.0.0",
+    "@capacitor-mlkit/barcode-scanning": "8.2.1",
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.5",
+    "@capacitor/ios": "8.5.3",
+    "@capacitor/preferences": "8.0.1",
+    "@capacitor/share": "8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}

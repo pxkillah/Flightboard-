@@ -1,10 +1,11 @@
 import { buildReport } from './src/report.js';
-import { validateVin, normalizeVin } from './src/vin.js';
-import { feedbackUrl } from './src/feedback.js';
+import { validateVin, normalizeVin, vinFromScan } from './src/vin.js';
+import { feedbackUrl, SUPPORT_EMAIL } from './src/feedback.js';
 import { recallMismatch } from './src/recallMatch.js';
 import { makeRecord, sortRecords, summarize, historyText, parseBackup, mergeRecords, recordsCsv, readingOf, convert, fmtReading, localDate, readStore, backupText, pruneLookups, MAX_BACKUP_BYTES } from './src/records.js';
 import { t as translate, pickLang, fmtNumber, fmtDate, fmtMonthYear, fmtDistance, fmtMoney, LOCALE } from './src/i18n.js';
 import { regionName, regionOptions } from './src/regions.js';
+import { isApp, saveFile, restoreSaved, mirrorSaved, canScan, scanBarcodes, askForRating } from './native.js';
 
 const $ = (s, root = document) => root.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -16,6 +17,8 @@ const EXAMPLE_VIN = '1HGCM82633A004352';
 const STORE = 'vin-report:v1';
 // Under the store's prefix, so Erase all clears it too.
 const LANG_KEY = `${STORE}:lang`;
+// What the app also keeps in the phone's own settings store (native.js).
+const SAVED_KEYS = [STORE, LANG_KEY];
 const TC_RECALLS = 'https://tc.canada.ca/en/road-transportation/motor-vehicle-safety/motor-vehicle-safety-recalls-database';
 const ACRONYMS = new Set(['ABS', 'ESC', 'TPMS', 'AWD', 'RWD', 'FWD', '4WD', '2WD', 'LED', 'HVAC', 'EVAP', 'EGR', 'ECM', 'PCM', 'SRS', 'USA', 'SUV', 'MPV', 'CNG', 'LPG', 'EV', 'HEV', 'PHEV', 'BEV', 'DRL', 'ACC', 'NHTSA', 'II', 'III', 'GMC', 'BMW', 'LLC']);
 
@@ -33,7 +36,7 @@ function initLang() {
   let saved = null;
   try { saved = localStorage.getItem(LANG_KEY); } catch { /* storage blocked */ }
   lang = pickLang({ param, saved, languages: navigator.languages?.length ? navigator.languages : [navigator.language] });
-  if (param === 'en' || param === 'fr') { try { localStorage.setItem(LANG_KEY, param); } catch { /* storage blocked */ } }
+  if (param === 'en' || param === 'fr') { try { localStorage.setItem(LANG_KEY, param); mirrorSaved(LANG_KEY, param); } catch { /* storage blocked */ } }
 }
 // Puts the current language's text into the static markup: data-i18n sets the text,
 // data-i18n-html sets markup from the dictionary (never from user input), and
@@ -69,7 +72,7 @@ function fillRegions() {
 }
 function switchLang() {
   lang = lang === 'fr' ? 'en' : 'fr';
-  try { localStorage.setItem(LANG_KEY, lang); } catch { /* storage blocked */ }
+  try { localStorage.setItem(LANG_KEY, lang); mirrorSaved(LANG_KEY, lang); } catch { /* storage blocked */ }
   applyStatic();
   if (!$('#search-msg').hidden) showSearchMsg(normalizeVin(input.value));
   if (current.report) { renderReport(); document.title = title(current.name); } else if (!current.vin) { renderHome(); document.title = title(); }
@@ -179,7 +182,9 @@ function loadStore() {
 function saveStore(d) {
   if (storeCache.problem === 'newer') return t('store.newer');
   try {
-    localStorage.setItem(STORE, JSON.stringify(d));
+    const json = JSON.stringify(d);
+    localStorage.setItem(STORE, json);
+    mirrorSaved(STORE, json);
     return null;
   } catch (e) {
     return e?.name === 'QuotaExceededError' || e?.name === 'NS_ERROR_DOM_QUOTA_REACHED' ? t('store.full') : t('store.blocked');
@@ -572,7 +577,7 @@ function renderRecords() {
     : !store.lastBackupAt ? ` <b>${esc(t('records.noBackup'))}</b>`
     : (store.lastChangeAt ?? 0) > store.lastBackupAt ? ` <b>${esc(t('records.changed', { date: when(store.lastBackupAt) }))}</b>`
     : ` ${esc(t('records.lastBackup', { date: when(store.lastBackupAt) }))}`;
-  const privacy = `<p class="fine gap-top${backup.includes('<b>') ? ' remind' : ''}">${esc(t('records.privacy'))}${backup}</p>`;
+  const privacy = `<p class="fine gap-top${backup.includes('<b>') ? ' remind' : ''}">${esc(t(isApp() ? 'records.privacyApp' : 'records.privacy'))}${backup}</p>`;
   const forget = store.vehicles[current.vin] ? `<button type="button" class="btn ghost small" data-act="forget">${icon('trash')}${esc(t('records.forget'))}</button>` : '';
   if (!recs.length) {
     el.innerHTML = `${head}<div class="records-empty">
@@ -783,7 +788,26 @@ form.addEventListener('submit', (e) => {
   toast(t('toast.saved'));
   // Asks the browser not to clear this site's storage on its own; harmless if it says no.
   navigator.storage?.persist?.().catch(() => {});
+  maybeAskForRating();
 });
+
+// In the app, asks for a store rating once someone has found it useful: after their third
+// saved record, then at most every 4 months. The phone decides whether to actually show it
+// (iOS shows it at most three times a year), so this can't nag. The website never asks.
+const RATING_KEY = `${STORE}:rating`;
+const RATING_RECORDS = 3;
+const RATING_GAP_MS = 120 * 864e5;
+function maybeAskForRating() {
+  if (!isApp()) return;
+  const n = Object.values(loadStore().vehicles).reduce((sum, v) => sum + (v.records?.length ?? 0), 0);
+  if (n < RATING_RECORDS) return;
+  let last = 0;
+  try { last = Number(localStorage.getItem(RATING_KEY)) || 0; } catch { /* storage blocked */ }
+  if (Date.now() - last < RATING_GAP_MS) return;
+  try { localStorage.setItem(RATING_KEY, String(Date.now())); } catch { return; }
+  // After the sheet has closed and the toast has been read.
+  setTimeout(askForRating, 1500);
+}
 
 // ---------- Feedback sheet ----------
 const fbSheet = $('#fb-sheet');
@@ -804,6 +828,8 @@ function openFeedback() {
   $('#fb-message').focus();
 }
 function closeFeedback() { if (typeof fbSheet.close === 'function') fbSheet.close(); else fbSheet.removeAttribute('open'); }
+// Feedback goes by email, so it's hidden until the support address is set (src/feedback.js).
+$('#feedback-btn').hidden = !SUPPORT_EMAIL;
 $('#feedback-btn').addEventListener('click', openFeedback);
 // A drag that starts in the textarea and ends on the backdrop also clicks the dialog; only
 // a press that starts on the backdrop closes it. The draft is kept until it is sent.
@@ -816,7 +842,7 @@ fbForm.addEventListener('submit', (e) => {
   const vin = fbVin && f.includeVin.checked ? fbVin : undefined;
   const { url, errors } = feedbackUrl({ kind: f.kind.value, message: f.message.value, vin }, { lang });
   if (errors.length) { err.textContent = errors.join(' '); err.hidden = false; return; }
-  window.open(url, '_blank', 'noopener');
+  location.href = url;
   closeFeedback();
   fbForm.reset();
   toast(t('fb.opened'));
@@ -836,24 +862,26 @@ async function copyHistory() {
   ta.remove();
   toast(ok ? t('toast.copied') : t('toast.copyFailed'));
 }
-function download(name, text, type) {
-  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([text], { type })), download: name });
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+// Returns true when the file was saved (downloaded, or shared from the app).
+async function save(name, text, type) {
+  try {
+    return (await saveFile(name, text, type)) === 'saved';
+  } catch (e) {
+    toast(t('toast.saveFailed', { msg: e?.message ?? '' }), { long: true });
+    return false;
+  }
 }
-function saveBackup() {
+async function saveBackup() {
   const d = loadStore();
-  download(`vin-report-backup-${localDate()}.json`, backupText(d.vehicles), 'application/json');
+  // A share sheet closed without saving isn't a backup, so the reminder stays.
+  if (!await save(`car-report-backup-${localDate()}.json`, backupText(d.vehicles), 'application/json')) return;
   d.lastBackupAt = Date.now();
   saveStore(d);
   renderRecords();
-  toast(t('toast.backup'));
+  toast(t(isApp() ? 'toast.backupApp' : 'toast.backup'));
 }
-function exportCsv() {
-  download(`vin-report-${current.vin}-${localDate()}.csv`, recordsCsv(recordsFor(current.vin), { lang }), 'text/csv');
-  toast(t('toast.csv'));
+async function exportCsv() {
+  if (await save(`car-report-${current.vin}-${localDate()}.csv`, recordsCsv(recordsFor(current.vin), { lang }), 'text/csv')) toast(t(isApp() ? 'toast.csvApp' : 'toast.csv'));
 }
 function forgetVehicle() {
   const n = recordsFor(current.vin).length;
@@ -870,6 +898,7 @@ function eraseAll() {
   if (!confirm(t('confirm.erase'))) return;
   try {
     for (const key of Object.keys(localStorage)) if (key === STORE || key.startsWith(`${STORE}:`)) localStorage.removeItem(key);
+    for (const key of SAVED_KEYS) mirrorSaved(key, null);
   } catch { /* storage blocked: nothing saved */ }
   if (current.vin) renderRecords(); else renderHome();
   toast(t('toast.erased'));
@@ -970,6 +999,25 @@ function route() {
   if (vin) lookup(vin, { push: false, example: normalizeVin(vin) === EXAMPLE_VIN, force: params.get('force') === '1' });
   else showHome();
 }
+// ---------- VIN scanner (app only) ----------
+const scanBtn = $('#scan');
+scanBtn.hidden = !canScan();
+scanBtn.addEventListener('click', async () => {
+  hideSearchMsg();
+  try {
+    const texts = await scanBarcodes();
+    if (!texts.length) return;
+    const vin = vinFromScan(texts);
+    if (!vin) { toast(t('scan.noVin'), { long: true }); return; }
+    input.value = vin;
+    updateCounter();
+    lookup(vin);
+  } catch (e) {
+    toast(t(e?.code === 'denied' ? 'scan.denied' : e?.code === 'installing' ? 'scan.installing' : 'scan.failed'), { long: true });
+  }
+});
+
+await restoreSaved(SAVED_KEYS);
 initLang();
 applyStatic();
 route();

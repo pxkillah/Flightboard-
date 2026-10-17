@@ -144,7 +144,7 @@ test('imports: VIN keys, skipped rows and readable errors', () => {
   const mixed = parseBackup(JSON.stringify({ app: 'vin-report', vehicles: { '1FTBR1X87LKA22229': { records: [r, { type: 'service', date: '2025-02-30' }, { type: 'nope' }] } } }));
   assert.equal(mixed.skipped, 2);
   assert.equal(parseBackup(`\uFEFF${JSON.stringify({ app: 'vin-report', vehicles: {} })}`).skipped, 0, 'a BOM is fine');
-  assert.throws(() => parseBackup('date,type\n2025-01-01,service'), /isn't a VIN Report backup/);
+  assert.throws(() => parseBackup('date,type\n2025-01-01,service'), /isn't a Car Report backup/);
   assert.throws(() => parseBackup(JSON.stringify({ app: 'vin-report', version: 99, vehicles: {} })), /newer version/);
   assert.throws(() => parseBackup(' '.repeat(MAX_BACKUP_BYTES + 1)), /too big/);
 });

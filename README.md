@@ -8,10 +8,18 @@ $ node bin/vehicle-report.js 1HGCM82633A004352
 $ node bin/vehicle-report.js 1HGCM82633A004352 --json
 ```
 
+## Car Report: the iPhone and Android app
+
+The web page below is also **Car Report**, an app for the App Store and Google Play. `mobile/`
+bundles the page into native iOS and Android projects with Capacitor, and adds a camera VIN
+scanner, saving files through the share sheet, and a durable copy of saved records. How to
+build and release it from a Mac is in `docs/app-release.md`; the store text and screenshots
+are in `mobile/store/`.
+
 ## Web page (works on a phone)
 
 `index.html` (with `app.js` and `app.css`) is the same report as a mobile-friendly web page. It runs entirely in the browser
-and calls the government APIs directly, so it needs no server. To host it free with GitHub Pages:
+and calls the government APIs directly, so it needs no server. To host it free with GitHub Pages (which, on the free plan, needs the repository to be public):
 Settings → Pages → Source "Deploy from a branch" → `main` / `(root)` → Save. The page is then at
 `https://<user>.github.io/<repo>/`, and `?vin=<VIN>` in the URL runs a lookup straight away.
 
@@ -29,8 +37,9 @@ one. Dates, numbers, money and the CSV export follow the language. Text that com
 such as recall summaries, stays in English.
 
 **Send feedback** (in the footer) opens a short form for a problem, an idea or wrong data. The page
-doesn't send it anywhere itself. It opens a pre-filled GitHub issue that the user reviews and posts,
-which needs a GitHub account. The VIN is included only if the user ticks the box.
+doesn't send it anywhere itself. It opens a pre-filled email in the person's own mail app, to the
+support address in `src/feedback.js`. The VIN is included only if they tick the box. The button is
+hidden until that address is set.
 
 It installs as a Home Screen app (Safari: Share → Add to Home Screen), using
 `manifest.webmanifest` and the icons in `icons/`. The page makes no requests except to NHTSA: the
@@ -83,9 +92,11 @@ project does not do that.
 - **What stays on your device:** your records and the VINs you check, in this browser's
   storage, and any backup or CSV files you save. There are no accounts, cookies or
   analytics. Remove a vehicle from its page, or erase everything from the page's footer.
-- **Feedback:** Send feedback puts your message (and the VIN, only if you tick the box) into
-  a github.com address. Nothing is sent until you post it on GitHub, where issues are
-  public. Report security problems privately instead (see `SECURITY.md`).
+- **Camera (app only):** used only when you tap the scan button, to read the VIN barcode on
+  the phone. No picture is saved or sent.
+- **Feedback:** Send feedback opens an email in your own mail app with your message (and the
+  VIN, only if you tick the box). Nothing is sent until you send it.
+- The full privacy policy is `privacy.html`, which is also inside the app.
 - The report is free and provided as is. Recalls are matched by model, so confirm with a
   dealer. Not affiliated with NHTSA, Transport Canada or Carfax.
 
