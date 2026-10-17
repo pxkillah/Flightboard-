@@ -88,7 +88,7 @@ Link in bio."* / *« Car Report. Gratuit sur l'App Store et Google Play. Lien da
   reason (for example "covers all-wheel drive; yours is front-wheel drive").
 - **Say:** "Recalls are listed by model, but some only cover one engine or drive type.
   Car Report flags those and tells you why, so you know what to ask the dealer."
-- **Caption:** The detail other apps skip. #carrecall #cartips
+- **Caption:** Know which recalls really apply to your car. #carrecall #cartips
 - **Français.** Accroche : « Ce rappel ne vise peut-être même pas votre auto. » Texte :
   « Les rappels sont listés par modèle, mais certains visent un seul moteur ou une seule
   traction. Car Report les signale et explique pourquoi. »

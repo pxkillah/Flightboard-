@@ -75,9 +75,25 @@ Source : les données de rappels, de plaintes et de cotes de sécurité viennent
 
 > Car Report needs no login. To try it, enter the sample VIN 1HGCM82633A004352 (NHTSA's
 > documentation example), or tap the barcode button to scan the VIN label on a vehicle's door
-> frame. Reports come from NHTSA's public APIs. "My records" stores entries on the device only;
-> Save backup and Export CSV use the share sheet. The app is available in English and French
-> (switch at the bottom of the screen).
+> frame. Every feature is visible in the app; there are no hidden, unlockable or remotely
+> enabled features, and all code ships in the app bundle (nothing is downloaded or changed
+> after review).
+>
+> - Report: VIN details, recalls (ones that probably don't apply to this vehicle are flagged
+>   with the reason), owner complaints and crash ratings, from NHTSA's public APIs. If a VIN
+>   fails its check digit, the app explains why and offers "Look up anyway" (some imports skip it).
+> - My records: service, odometer and registration entries, stored on the device only. Save
+>   backup and Export CSV open the share sheet; Restore reads a backup file; Copy history copies text.
+> - After the third saved record, the app may show Apple's standard rating prompt (SKStoreReviewController).
+> - Send feedback (bottom of the screen) opens the user's mail app with a pre-filled email to creport88@gmail.com.
+> - English and French (switch at the bottom of the screen). Privacy policy: "Privacy and data notes" at the bottom.
+
+## Creative assets (App Store guideline 2.3.14)
+
+If you add App Store creative assets (images for the product page header or search results),
+they must show what Car Report actually does: no prices or "free" badges, no other apps'
+names or logos, and no claims you can't prove ("the best", "#1", "more accurate than…").
+The screenshots in `screenshots/` already follow this.
 
 ## Google Play: App content answers
 
