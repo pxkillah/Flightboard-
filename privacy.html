@@ -26,20 +26,23 @@
 
   <section lang="en">
     <h1>Privacy policy</h1>
-    <p class="date">Car Report, by pxkillah. Last updated 15 October 2026.</p>
+    <p class="date">Car Report, by pxkillah. Last updated 20 October 2026.</p>
 
     <h2>The short version</h2>
-    <p>Car Report has no accounts, ads, analytics or tracking. We don't collect your data: your records stay on your device. To look up a vehicle, the VIN goes to the US government's NHTSA, and nowhere else.</p>
+    <p>Car Report has no accounts, ads, analytics or tracking. Your records stay on your device. To look up a vehicle, the VIN goes to the US government's NHTSA and to the Car Report server, which counts its sale listings. If you buy a report, Apple or Google handles the payment; we never see your card or your account, only the store's reference to the purchase.</p>
 
     <h2>What leaves your device</h2>
     <ul>
       <li><strong>The VIN you check</strong> goes to NHTSA's VIN decoder (vPIC), part of the US Department of Transportation. The decoded year, make and model go to NHTSA's recall, complaint and crash-rating services. NHTSA's own privacy policy applies to those requests (nhtsa.gov).</li>
+      <li><strong>The Car Report server</strong> (run by us on Cloudflare) receives the VIN when you open a report in the app, to count the vehicle's sale listings with MarketCheck, and, when you buy a report, the App Store or Google Play reference to that purchase. It checks the purchase with Apple or Google and gets the listings from MarketCheck, which receives the VIN. The server keeps each purchase reference with its VIN (Google's is kept only as a one-way hash) so you can open the report again; it keeps listing counts for a day. To limit abuse, it counts requests per day by a one-way, keyed hash of your IP address, never the address itself, and deletes those counts after two days.</li>
+      <li><strong>Payments</strong> are made with Apple or Google under their own privacy policies. We receive no name, email, card or account details.</li>
+      <li><strong>On the website</strong>, if you add your own MarketCheck key, the VIN and your key go to MarketCheck when you ask for a listing history. The key stays in your browser.</li>
       <li><strong>Feedback</strong> you choose to send is an email from your own mail app. It includes the VIN only if you tick the box. We use it only to reply and to fix the app, and we delete it if you ask.</li>
       <li><strong>Files you share</strong> (backups, spreadsheets, copied history) go only where you send them.</li>
     </ul>
 
     <h2>What stays on your device</h2>
-    <p>Your service, odometer and registration records, your vehicle names, the VINs you've checked and your language choice. Nobody else, including us, can see them. If you back up your phone to iCloud or Google, those backups can include them, in your account, not ours. They are deleted when you delete the app, or anytime with "Erase all Car Report data on this device" at the bottom of the app.</p>
+    <p>Your service, odometer and registration records, your vehicle names, the VINs you've checked, the reports you've bought and your language choice. Nobody else, including us, can see them. If you back up your phone to iCloud or Google, those backups can include them, in your account, not ours. They are deleted when you delete the app, or anytime with "Erase all Car Report data on this device" at the bottom of the app.</p>
 
     <h2>Camera</h2>
     <p>The app uses the camera only when you tap the scan button, to read the VIN barcode on your vehicle. The barcode is read on your device; no picture is saved or sent.</p>
@@ -47,29 +50,35 @@
     <h2>Children</h2>
     <p>Car Report isn't directed at children and collects no personal information from anyone.</p>
 
+    <h2>Deleting data</h2>
+    <p>Everything on your device: "Erase all Car Report data on this device", or delete the app. On our server: email us the VIN, and we delete its purchase records (you then can't load that report's listings again).</p>
+
     <h2>Changes and contact</h2>
     <p>If this policy changes, the new version will be posted here with a new date. Questions or requests: <a href="mailto:creport88@gmail.com">creport88@gmail.com</a>.</p>
 
     <h2>Where the data comes from</h2>
-    <p>Recall, complaint and crash-rating data is public information from NHTSA, matched by year, make and model: confirm with a dealer whether a recall applies to your vehicle and whether it was repaired. Car Report isn't affiliated with NHTSA, Transport Canada or Carfax.</p>
+    <p>Recall, complaint and crash-rating data is public information from NHTSA, matched by year, make and model: confirm with a dealer whether a recall applies to your vehicle and whether it was repaired. Sale listings come from MarketCheck, with its permission; prices and mileage are as advertised. Car Report isn't affiliated with NHTSA, Transport Canada, MarketCheck or Carfax.</p>
   </section>
 
   <section lang="fr" id="fr">
     <h1>Politique de confidentialité</h1>
-    <p class="date">Car Report, par pxkillah. Mise à jour le 15 octobre 2026.</p>
+    <p class="date">Car Report, par pxkillah. Mise à jour le 20 octobre 2026.</p>
 
     <h2>En bref</h2>
-    <p>Car Report n'a ni comptes, ni publicités, ni statistiques, ni pistage. Nous ne recueillons pas vos données&nbsp;: vos entrées restent sur votre appareil. Pour vérifier un véhicule, le NIV est envoyé à la NHTSA du gouvernement américain, et nulle part ailleurs.</p>
+    <p>Car Report n'a ni comptes, ni publicités, ni statistiques, ni pistage. Vos entrées restent sur votre appareil. Pour vérifier un véhicule, le NIV est envoyé à la NHTSA du gouvernement américain et au serveur de Car Report, qui compte ses annonces de vente. Si vous achetez un rapport, Apple ou Google s'occupe du paiement&nbsp;: nous ne voyons jamais votre carte ni votre compte, seulement la référence du magasin pour l'achat.</p>
 
     <h2>Ce qui quitte votre appareil</h2>
     <ul>
       <li><strong>Le NIV que vous vérifiez</strong> est envoyé au décodeur de NIV de la NHTSA (vPIC), qui relève du département des Transports des États-Unis. L'année, la marque et le modèle décodés sont envoyés aux services de rappels, de plaintes et de cotes de sécurité de la NHTSA. La politique de confidentialité de la NHTSA s'applique à ces demandes (nhtsa.gov).</li>
+      <li><strong>Le serveur de Car Report</strong> (exploité par nous chez Cloudflare) reçoit le NIV quand vous ouvrez un rapport dans l'application, pour compter les annonces de vente du véhicule avec MarketCheck, et, quand vous achetez un rapport, la référence de cet achat dans l'App Store ou Google Play. Il vérifie l'achat auprès d'Apple ou de Google et obtient les annonces de MarketCheck, qui reçoit le NIV. Le serveur garde chaque référence d'achat avec son NIV (celle de Google seulement sous forme de hachage à sens unique) pour que vous puissiez rouvrir le rapport&nbsp;; il garde les comptes d'annonces pendant une journée. Pour limiter les abus, il compte les demandes par jour au moyen d'un hachage à sens unique et à clé de votre adresse IP, jamais l'adresse elle-même, et efface ces comptes après deux jours.</li>
+      <li><strong>Les paiements</strong> se font auprès d'Apple ou de Google, selon leurs propres politiques de confidentialité. Nous ne recevons ni nom, ni courriel, ni carte, ni détails de compte.</li>
+      <li><strong>Sur le site Web</strong>, si vous ajoutez votre propre clé MarketCheck, le NIV et votre clé sont envoyés à MarketCheck quand vous demandez un historique des annonces. La clé reste dans votre navigateur.</li>
       <li><strong>Les commentaires</strong> que vous choisissez d'envoyer sont un courriel envoyé de votre propre application de courriel. Il contient le NIV seulement si vous cochez la case. Nous l'utilisons seulement pour vous répondre et améliorer l'application, et nous le supprimons sur demande.</li>
       <li><strong>Les fichiers que vous partagez</strong> (sauvegardes, tableurs, historique copié) vont seulement là où vous les envoyez.</li>
     </ul>
 
     <h2>Ce qui reste sur votre appareil</h2>
-    <p>Vos entrées d'entretien, d'odomètre et d'immatriculation, le nom de vos véhicules, les NIV vérifiés et votre choix de langue. Personne d'autre, y compris nous, ne peut les voir. Si vous sauvegardez votre téléphone dans iCloud ou Google, ces sauvegardes peuvent les inclure, dans votre compte et non le nôtre. Ils sont effacés quand vous supprimez l'application, ou en tout temps avec «&nbsp;Effacer toutes les données de Car Report sur cet appareil&nbsp;» au bas de l'application.</p>
+    <p>Vos entrées d'entretien, d'odomètre et d'immatriculation, le nom de vos véhicules, les NIV vérifiés, les rapports achetés et votre choix de langue. Personne d'autre, y compris nous, ne peut les voir. Si vous sauvegardez votre téléphone dans iCloud ou Google, ces sauvegardes peuvent les inclure, dans votre compte et non le nôtre. Ils sont effacés quand vous supprimez l'application, ou en tout temps avec «&nbsp;Effacer toutes les données de Car Report sur cet appareil&nbsp;» au bas de l'application.</p>
 
     <h2>Appareil photo</h2>
     <p>L'application utilise l'appareil photo seulement quand vous touchez le bouton de lecture, pour lire le code-barres du NIV de votre véhicule. Le code-barres est lu sur votre appareil&nbsp;; aucune photo n'est enregistrée ni envoyée.</p>
@@ -77,11 +86,14 @@
     <h2>Enfants</h2>
     <p>Car Report ne s'adresse pas aux enfants et ne recueille de renseignements personnels auprès de personne.</p>
 
+    <h2>Supprimer des données</h2>
+    <p>Tout ce qui est sur votre appareil&nbsp;: «&nbsp;Effacer toutes les données de Car Report sur cet appareil&nbsp;», ou supprimez l'application. Sur notre serveur&nbsp;: écrivez-nous en indiquant le NIV, et nous supprimons ses dossiers d'achat (vous ne pourrez alors plus recharger les annonces de ce rapport).</p>
+
     <h2>Modifications et contact</h2>
     <p>Si cette politique change, la nouvelle version sera publiée ici avec une nouvelle date. Questions ou demandes&nbsp;: <a href="mailto:creport88@gmail.com">creport88@gmail.com</a>.</p>
 
     <h2>Provenance des données</h2>
-    <p>Les données de rappels, de plaintes et de cotes de sécurité sont des renseignements publics de la NHTSA, associés par année, marque et modèle&nbsp;: confirmez auprès d'un concessionnaire si un rappel s'applique à votre véhicule et s'il a été effectué. Car Report n'est pas affilié à la NHTSA, à Transports Canada ni à Carfax.</p>
+    <p>Les données de rappels, de plaintes et de cotes de sécurité sont des renseignements publics de la NHTSA, associés par année, marque et modèle&nbsp;: confirmez auprès d'un concessionnaire si un rappel s'applique à votre véhicule et s'il a été effectué. Les annonces de vente viennent de MarketCheck, avec sa permission&nbsp;; les prix et le kilométrage sont tels qu'annoncés. Car Report n'est pas affilié à la NHTSA, à Transports Canada, à MarketCheck ni à Carfax.</p>
   </section>
 </main>
 </body>

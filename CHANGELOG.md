@@ -4,6 +4,12 @@ Changes people using VIN Report would notice. Newest first.
 
 ## Unreleased
 
+- **Full report in the app: CA$11.99 per VIN.** In the iPhone and Android app, the full report
+  (sale listing history from MarketCheck, recalls, complaints and crash ratings) is a one-time
+  purchase through the App Store or Google Play. Before buying you see the vehicle, how many
+  sale listings it has, and any do-not-drive warning, free; My records stays free. A purchase
+  interrupted by a lost connection or a closed app is finished the next time the app opens.
+  The website is unchanged.
 - **Car Report for iPhone and Android.** The page is now also a phone app, with:
   - a scan button that reads the VIN barcode on the door frame or windshield;
   - backups and spreadsheets that open the share sheet (Files, AirDrop, email…);

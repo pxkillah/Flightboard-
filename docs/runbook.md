@@ -79,6 +79,24 @@ If MarketCheck moves its API to another address, the Content-Security-Policy in 
 blocks it and every visitor sees "Couldn't reach MarketCheck": add the new address to
 `connect-src`, and to `test/page.test.js`. For a key saved on a lost device, see `SECURITY.md`.
 
+## Paid reports (the app and the server)
+
+The app's offer panel and listing history say what went wrong in words; the server's logs
+(Cloudflare dashboard → Workers & Pages → car-report-api → Logs) say why, by name, without
+keys or VINs. Set-up and secrets are in `docs/server.md`.
+
+| People see, or the log says | What to do |
+|---|---|
+| "Something went wrong on our side"; log: `missing settings: …` | A secret isn't set. `npx wrangler secret put <NAME>` in `server/`. |
+| Same; log: `MarketCheck refused the key` | The MarketCheck key was cancelled or changed. Put the current one with `npx wrangler secret put MARKETCHECK_API_KEY`. |
+| Same; log: `Apple refused the App Store Server API key` or `Google refused …` | The store key was revoked or lost its permission. Make a new one (`docs/server.md`, step 3) and put it. |
+| "Too many checks from this phone today", or counts stop showing for everyone | The daily limits in `server/wrangler.toml` (`PREVIEW_PER_IP_DAY`, `PREVIEW_PER_DAY`). Raise them if it's real demand, then `npx wrangler deploy`. Each new count costs a MarketCheck call. |
+| Log: `MarketCheck says the plan is out of calls` | Check usage and the plan on the MarketCheck dashboard. Bought reports are kept; buyers can tap Check again later. |
+| "Couldn't reach the Car Report server" for everyone | Check the Worker in the Cloudflare dashboard and `curl …/v1/health`. A bad deploy: `npx wrangler rollback`. |
+| A buyer says they paid but nothing opened | The app retries at launch. Ask them to reopen the app and tap Check again on the report. If the purchase was used for another VIN, the app opens that one and says so. |
+| Refund requests | Apple and Google handle them (`support.html`). A refunded purchase stops loading listings. |
+| Someone asks to delete their data | `npx wrangler d1 execute car-report --remote --command "DELETE FROM unlocks WHERE vin = '<VIN>'"`, and delete their emails. Tell them the report's listings can't be loaded again. |
+
 ## GitHub Pages or the account is unavailable
 
 The app doesn't depend on GitHub at all once installed. For the website:

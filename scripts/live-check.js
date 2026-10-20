@@ -3,6 +3,8 @@
 // section came back in the expected format. Run daily by .github/workflows/live-check.yml,
 // so an NHTSA outage or format change shows up as a failed run, not as wrong reports.
 import { buildReport } from '../src/report.js';
+import { REPORT_API } from '../src/paid.js';
+import { getJson } from '../src/http.js';
 
 const VIN = '1HGCM82633A004352';
 const r = await buildReport(VIN);
@@ -25,6 +27,16 @@ if (!r.errors.recallsUS && !(r.recallsUS?.length > 0 && r.recallsUS.every((x) =>
 if (!r.errors.complaints && !(r.complaints?.total > 0)) problems.push('Complaints: none found');
 // The web page doesn't use Transport Canada, so its problems only warn.
 if (r.errors.recallsCanada) warnings.push(`Transport Canada recalls (CLI only): ${r.errorKinds.recallsCanada}: ${r.errors.recallsCanada}`);
+
+// The paid report's server (decision 16), once the app points at one.
+if (REPORT_API) {
+  try {
+    const health = await getJson(`${REPORT_API}/v1/health`);
+    if (health?.ok !== true) problems.push('Car Report server: /v1/health did not answer ok');
+  } catch (e) {
+    problems.push(`Car Report server: ${e.message}`);
+  }
+}
 
 for (const w of warnings) console.log(`::warning::${w}`);
 if (problems.length) {

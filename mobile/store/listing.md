@@ -18,54 +18,64 @@ Support email: **creport88@gmail.com**. Replace the two page addresses once the 
 
 - Keywords and the subtitle must not name other companies or apps (Apple guideline 2.3.7), so no "Carfax" there; the description may mention it only in the not-affiliated sentence.
 - App Store category: Utilities (secondary: Reference). Google Play category: Auto & Vehicles.
-- Price: free. No in-app purchases, no ads.
+- Price: free to download, with one in-app purchase: **Full report** (`car_report_full`, consumable, CA$11.99), which opens the full report for one VIN. No ads, no subscriptions.
 - Privacy policy URL: the hosted `privacy.html`. Support URL: the hosted `support.html`.
 
 ## Description (English)
 
-Check any car, truck or SUV by its VIN, free, with no account.
+Check any car, truck or SUV by its VIN, with no account.
 
-Type the 17-character VIN or scan the barcode on the driver's door frame, and Car Report shows:
+Type the 17-character VIN or scan the barcode on the driver's door frame. Car Report shows what the VIN says (year, make, model, engine, drive type and where it was built) and warns you, free, when a recall says not to drive the vehicle until it's repaired. It also tells you how many times the vehicle was advertised for sale.
 
+The full report for that VIN (one-time purchase, CA$11.99) adds:
+
+• Sale listing history: when and where the vehicle was advertised, new or used, the asking prices and the advertised mileage, with a warning if the mileage ever went down
+• The advertised mileage checked against your own odometer readings
 • Recalls for that model, with the ones that probably don't apply to this vehicle flagged and explained
 • Owner complaints filed with NHTSA: crashes, fires, injuries and the most reported problems
 • Crash-test ratings
-• What the VIN says: year, make, model, engine, drive type, weight class and where it was built
-• A warning when a recall says not to drive the vehicle until it's repaired
 
-Keep your own logbook too: oil changes and repairs, odometer readings in km or miles, and registration renewals for any Canadian province or US state. Car Report charts your mileage, warns if the odometer ever goes backwards, shows when a registration is about to expire, and lets you share the history with a buyer or mechanic, or export it as a spreadsheet.
+Keep your own logbook too, free: oil changes and repairs, odometer readings in km or miles, and registration renewals for any Canadian province or US state. Car Report charts your mileage, warns if the odometer ever goes backwards, shows when a registration is about to expire, and lets you share the history with a buyer or mechanic, or export it as a spreadsheet.
 
-Private by design: your records stay on your phone. There are no accounts, ads or tracking. The only thing that leaves your phone is the VIN you check, which goes to NHTSA.
+Private by design: your records stay on your phone. There are no accounts, ads or tracking. The VIN you check goes to NHTSA and to the Car Report server to look up the vehicle; Apple or Google handles payment.
 
 In English and French.
 
-Source: recall, complaint and crash-rating data comes from the U.S. National Highway Traffic Safety Administration (NHTSA). Recalls are listed by model: confirm with a dealer whether one applies to your vehicle and whether it was repaired. Car Report is not affiliated with or endorsed by NHTSA, Transport Canada, Carfax or any government agency. It doesn't include accident, lien or ownership history.
+Sources: recall, complaint and crash-rating data comes from the U.S. National Highway Traffic Safety Administration (NHTSA). Recalls are listed by model: confirm with a dealer whether one applies to your vehicle and whether it was repaired. Sale listings come from MarketCheck; prices and mileage are as advertised, not verified. Car Report is not affiliated with or endorsed by NHTSA, Transport Canada, MarketCheck, Carfax or any government agency. It doesn't include accident, lien or ownership history.
 
 ## Description (français)
 
-Vérifiez n'importe quelle auto, camionnette ou VUS par son NIV, gratuitement et sans compte.
+Vérifiez n'importe quelle auto, camionnette ou VUS par son NIV, sans compte.
 
-Tapez le NIV de 17 caractères ou lisez le code-barres dans le cadre de la portière du conducteur, et Car Report affiche :
+Tapez le NIV de 17 caractères ou lisez le code-barres dans le cadre de la portière du conducteur. Car Report affiche ce que dit le NIV (année, marque, modèle, moteur, traction et lieu d'assemblage) et vous avertit gratuitement quand un rappel demande de ne pas conduire le véhicule avant la réparation. Il indique aussi combien de fois le véhicule a été annoncé à vendre.
 
+Le rapport complet de ce NIV (achat unique, 11,99 $ CA) ajoute :
+
+• L'historique des annonces de vente : quand et où le véhicule a été annoncé, neuf ou d'occasion, les prix demandés et le kilométrage annoncé, avec un avertissement si le kilométrage a déjà baissé
+• Le kilométrage annoncé comparé à vos propres relevés d'odomètre
 • Les rappels pour ce modèle, avec ceux qui ne s'appliquent probablement pas à ce véhicule signalés et expliqués
 • Les plaintes de propriétaires déposées auprès de la NHTSA : accidents, incendies, blessures et problèmes les plus signalés
 • Les cotes de sécurité aux essais de collision
-• Ce que dit le NIV : année, marque, modèle, moteur, traction, catégorie de poids et lieu d'assemblage
-• Un avertissement quand un rappel demande de ne pas conduire le véhicule avant la réparation
 
-Tenez aussi votre propre carnet : vidanges et réparations, relevés d'odomètre en km ou en milles, et renouvellements d'immatriculation dans toute province canadienne ou tout État américain. Car Report trace votre kilométrage, vous avertit si l'odomètre recule, indique quand l'immatriculation arrive à échéance, et vous permet de partager l'historique avec un acheteur ou un mécanicien, ou de l'exporter en tableur.
+Tenez aussi votre propre carnet, gratuitement : vidanges et réparations, relevés d'odomètre en km ou en milles, et renouvellements d'immatriculation dans toute province canadienne ou tout État américain. Car Report trace votre kilométrage, vous avertit si l'odomètre recule, indique quand l'immatriculation arrive à échéance, et vous permet de partager l'historique avec un acheteur ou un mécanicien, ou de l'exporter en tableur.
 
-Confidentiel par conception : vos entrées restent sur votre téléphone. Aucun compte, aucune publicité, aucun pistage. La seule chose qui quitte votre téléphone est le NIV vérifié, envoyé à la NHTSA.
+Confidentiel par conception : vos entrées restent sur votre téléphone. Aucun compte, aucune publicité, aucun pistage. Le NIV vérifié est envoyé à la NHTSA et au serveur de Car Report pour trouver le véhicule; Apple ou Google s'occupe du paiement.
 
 En français et en anglais.
 
-Source : les données de rappels, de plaintes et de cotes de sécurité viennent de la National Highway Traffic Safety Administration (NHTSA) des États-Unis. Les rappels sont classés par modèle : confirmez auprès d'un concessionnaire si un rappel s'applique à votre véhicule et s'il a été effectué. Car Report n'est pas affilié à la NHTSA, à Transports Canada, à Carfax ni à aucun organisme gouvernemental, et n'est pas approuvé par eux. Il ne contient pas d'historique d'accidents, de privilèges ou de propriétaires.
+Sources : les données de rappels, de plaintes et de cotes de sécurité viennent de la National Highway Traffic Safety Administration (NHTSA) des États-Unis. Les rappels sont classés par modèle : confirmez auprès d'un concessionnaire si un rappel s'applique à votre véhicule et s'il a été effectué. Les annonces de vente viennent de MarketCheck; les prix et le kilométrage sont tels qu'annoncés, sans vérification. Car Report n'est pas affilié à la NHTSA, à Transports Canada, à MarketCheck, à Carfax ni à aucun organisme gouvernemental, et n'est pas approuvé par eux. Il ne contient pas d'historique d'accidents, de privilèges ou de propriétaires.
 
 ## Apple: App Privacy
 
-- Data collection: **No, we do not collect data from this app.** The VIN goes straight from
-  the phone to NHTSA when the person asks for a report; it never reaches the developer.
-  Feedback is an email the person sends from their own mail app.
+- Data collection: **Yes**, by the Car Report server (decision 16), declared in the privacy
+  manifest (`ios/App/App/PrivacyInfo.xcprivacy`) too:
+  - **Purchases → Purchase History**: the App Store reference to each report bought, kept with
+    its VIN so the report can be opened again. Not linked to the user's identity; not used for
+    tracking; purpose **App Functionality**.
+  - **Other Data → Other Data Types**: the VIN checked or bought. Not linked; not tracking;
+    **App Functionality**.
+  - The server never stores IP addresses: it keeps a keyed one-way hash of one for daily abuse
+    limits, deleted after two days. Feedback is an email the person sends from their own mail app.
 - Tracking: none. The privacy manifest (`ios/App/App/PrivacyInfo.xcprivacy`) says the same.
 - Export compliance: uses only standard HTTPS, so it's exempt
   (`ITSAppUsesNonExemptEncryption` is set to NO in Info.plist).
@@ -73,10 +83,14 @@ Source : les données de rappels, de plaintes et de cotes de sécurité viennent
 
 ## Apple: notes for the reviewer
 
-> Car Report needs no login. To try it, enter the sample VIN 1HGCM82633A004352 (NHTSA's
-> documentation example), or tap the barcode button to scan the VIN label on a vehicle's door
-> frame. Every feature is visible in the app; there are no hidden, unlockable or remotely
-> enabled features, and all code ships in the app bundle (nothing is downloaded or changed
+> Car Report needs no login. To try it, tap "See an example report" (NHTSA's sample VIN
+> 1HGCM82633A004352): the example shows the full report free. Any other VIN shows the vehicle,
+> safety warnings and My records free, and a "Get the full report" button: the consumable
+> in-app purchase `car_report_full`, which opens the full report (sale listing history,
+> recalls, complaints, crash ratings) for that one VIN. A sandbox purchase works; our server
+> confirms it with the App Store Server API. Try VIN 1FTBR1X87LKA22229, which has sale
+> listings. Sale listings come from MarketCheck, which has approved this use. Every feature is
+> visible in the app, and all code ships in the app bundle (nothing is downloaded or changed
 > after review).
 >
 > - Report: VIN details, recalls (ones that probably don't apply to this vehicle are flagged
@@ -106,8 +120,12 @@ The screenshots in `screenshots/` already follow this.
 - News app: No. Government app: No (it shows public government data and says so in the
   description, with the "not affiliated" disclaimer Google requires).
 - Data safety:
-  - Does the app collect or share user data? **No.** Looking up a VIN sends it to NHTSA at the
-    person's request, which Google counts as a user-initiated transfer, not sharing.
+  - Does the app collect or share user data? **Yes, collected** (not shared): **Financial info →
+    Purchase history** (the Google Play reference to each report bought, stored only as a
+    one-way hash with its VIN; required; purpose App functionality). The VIN is about a
+    vehicle, not a person; if you'd rather be cautious, also declare it under **Personal info →
+    Other info**. Sending the VIN to NHTSA is a user-initiated transfer, not sharing.
+  - Payments go through Google Play billing; the app never sees card details.
   - Is data encrypted in transit? Yes (HTTPS only).
   - Can users delete their data? Yes: in the app ("Erase all Car Report data on this device"),
     or by uninstalling.

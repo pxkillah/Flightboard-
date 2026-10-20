@@ -13,9 +13,14 @@ Google Play, the `main` branch and the current CLI are supported.
 
 - The page, as the iOS and Android app and as the website: it keeps records on the device
   (`localStorage`, plus a copy in the phone's settings store in the app) and should contact
-  nothing but NHTSA, plus MarketCheck when a website visitor with their own key asks for a
-  listing history (enforced by a Content-Security-Policy in `index.html`).
+  nothing but NHTSA, the Car Report server (in the app), and MarketCheck when a website
+  visitor with their own key asks for a listing history (enforced by a
+  Content-Security-Policy in `index.html`).
 - The native projects in `mobile/` and the Capacitor plugins they use.
+- The Car Report server (`server/`, a Cloudflare Worker): it holds the MarketCheck key and the
+  App Store and Google Play credentials as Worker secrets, and decides which purchases open a
+  report. A way to get a report without paying, or to read another person's purchase, is in
+  scope.
 - The CLI (`bin/vehicle-report.js`), which prints data from NHTSA and Transport Canada, and
   from MarketCheck when a key is set.
 - This repository and its GitHub Actions workflows.
@@ -38,7 +43,12 @@ script could read people's saved records and MarketCheck keys. From another devi
 6. Apple: change the Apple ID password, remove the lost device from it, and in App Store
    Connect check Users and Access and that no unexpected build is in review. Revoke the
    distribution certificate at developer.apple.com if the Mac was lost.
-7. Google: change the password, sign out the lost device, and in Play Console check Users and
+7. Cloudflare: change the password and check two-step sign-in, then in the dashboard check
+   Members and API Tokens. If the lost device had `wrangler` signed in, revoke its token
+   (My Profile → API Tokens) and replace the server's secrets: create a new MarketCheck key,
+   a new App Store In-App Purchase key and a new Google service account key, `wrangler secret
+   put` each, and delete the old ones (`docs/server.md`).
+8. Google: change the password, sign out the lost device, and in Play Console check Users and
    permissions and that no unexpected release is rolling out (halt it if so). If the Mac held
    the Android upload key, ask Google to reset the upload key (Play App Signing keeps the
    real signing key safe).

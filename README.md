@@ -18,6 +18,15 @@ scanner, saving files through the share sheet, and a durable copy of saved recor
 build and release it from a Mac is in `docs/app-release.md`; the store text and screenshots
 are in `mobile/store/`.
 
+**Paid reports.** In the app, the full report for a VIN costs CA$11.99, bought once through
+the App Store or Google Play. Before paying, people see the vehicle, any do-not-drive or
+park-outside recall warning, how many sale listings MarketCheck has for it, and My records,
+all free. The paid part is the listing history, recalls, complaints and crash ratings.
+`server/` is the Cloudflare Worker that checks each purchase with Apple or Google and fetches
+the listings with the owner's MarketCheck key; setting it up is in `docs/server.md`. Until its
+address is set in `src/paid.js`, the app shows every report free. The website doesn't sell
+anything.
+
 ## Web page (works on a phone)
 
 `index.html` (with `app.js` and `app.css`) is the same report as a mobile-friendly web page. It runs entirely in the browser
@@ -121,7 +130,10 @@ project does not do that.
 ## Privacy
 
 - **What leaves your device:** the VIN goes to NHTSA's VIN decoder (vPIC), and the decoded
-  year, make and model go to NHTSA's recall, complaint and crash-rating services. If you've
+  year, make and model go to NHTSA's recall, complaint and crash-rating services. In the app,
+  the VIN also goes to the Car Report server, and when you buy a report, so does the store's
+  reference to the purchase (never your card or account); the server keeps that reference
+  with the VIN so the report can be opened again. If you've
   added a MarketCheck key, the VIN and your key go to MarketCheck when you ask for a listing
   history (the command line asks on every lookup; the page only when you tap the button). GitHub
   Pages, which hosts the page, sees each page request, including `?vin=` when you open a
@@ -135,7 +147,7 @@ project does not do that.
 - **Feedback:** Send feedback opens an email in your own mail app with your message (and the
   VIN, only if you tick the box). Nothing is sent until you send it.
 - The full privacy policy is `privacy.html`, which is also inside the app.
-- The report is free and provided as is. Recalls are matched by model, so confirm with a
+- On the website the report is free; in the app the full report is paid. Either way it's provided as is. Recalls are matched by model, so confirm with a
   dealer. Not affiliated with NHTSA, Transport Canada, MarketCheck or Carfax.
 
 ## Run it locally

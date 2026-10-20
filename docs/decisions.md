@@ -157,3 +157,38 @@ closed to the public, and GitHub Pages on the free plan stops serving it, so:
 - The privacy policy and support pages (`privacy.html`, `support.html`) are self-contained so
   the owner can host them anywhere; the privacy policy is also inside the app.
 - Security reports go to the same address (`SECURITY.md`).
+
+## 16. Paid reports in the phone app, through the Car Report server (2026-10-20)
+
+Partly supersedes decisions 1, 2, 3 and 13 for the app. The owner chose to sell the report in
+the iOS and Android app for CA$11.99 per VIN, with MarketCheck's listing history as the paid
+data; MarketCheck approved this use (owner, 2026-10-20; keep the written approval). The owner
+chose: the store apps first (the website is unchanged for now), Canadian dollars, the whole
+report behind the payment, and a free count of listings before paying.
+
+- **Server.** `server/` is a Cloudflare Worker with a D1 database (`docs/server.md`). It holds
+  the owner's MarketCheck key and the App Store and Google Play credentials as Worker secrets,
+  so the app contains none. Considered: RevenueCat (handles store checks for a fee and another
+  account), and the visitor's own key (decision 13; useless to buyers). The Worker reuses
+  `src/sources/marketcheck.js`, so the CLI, website and server read MarketCheck the same way.
+- **Payment.** Apple and Google require their own in-app purchase for digital content in an
+  app (Apple guideline 3.1.1), so it's a consumable product `car_report_full`, through
+  `@capgo/native-purchases`. Each purchase is confirmed with the store by the server on every
+  request (App Store Server API; Play Developer API), so a refund stops it working; each
+  purchase is tied to the first VIN it's used for, in D1. Purchases stay unfinished until the
+  server confirms them, so none is lost to a closed app or a dropped connection; one the app
+  can't place becomes a credit for the next VIN.
+- **What stays free, against the owner's "whole report" choice:** the do-not-drive and
+  park-outside recall warnings, because hiding a safety warning behind a payment could get
+  someone hurt and NHTSA gives it away; My records, which is the owner's own data; and the
+  example report, so people and App Review can see what they'd buy.
+- **Cost control.** The free count is one MarketCheck call, reused for a day per VIN, limited
+  per caller (a keyed hash of the IP address, deleted after two days) and per day overall. A
+  bought report can be refreshed five times a day.
+- **Privacy.** The server keeps each purchase reference (Google's only as a hash) with its VIN,
+  and nothing about the person. The privacy policy, the iOS privacy manifest and the store
+  answers now say the app collects purchase history and the VIN, not linked to the person.
+- **Still open:** whether the free website should keep showing the full NHTSA report and the
+  bring-your-own-key listing history once the app sells them (decision 15 planned to take the
+  website offline). Until `REPORT_API` is set in `src/paid.js`, the app gives every report
+  away and `check-release` refuses to ship.

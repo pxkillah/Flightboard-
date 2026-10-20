@@ -19,6 +19,8 @@ const DAY_MS = 86400000;
 const MAX_BODY = 4096;
 const num = (v, fallback) => (Number.isFinite(Number(v)) && v !== '' && v !== undefined ? Number(v) : fallback);
 const utcDay = (ms) => new Date(ms).toISOString().slice(0, 10);
+// Logs name the problem, never a VIN (error messages can carry request URLs).
+const redact = (msg) => String(msg ?? '').replace(/[A-HJ-NPR-Z0-9]{17}/gi, '[VIN]');
 
 export default {
   fetch: (request, env) => handle(request, env),
@@ -51,7 +53,7 @@ export async function handle(request, env, { fetch = globalThis.fetch, now = Dat
   } catch (e) {
     if (e instanceof ApiError) return reply(e.status, { error: e.code, ...e.extra });
     // MarketCheck errors arrive with the key already scrubbed (src/sources/marketcheck.js).
-    console.error('unexpected error', e?.name, e?.message);
+    console.error('unexpected error', e?.name, redact(e?.message));
     return reply(500, { error: 'server' });
   }
 }
@@ -91,7 +93,7 @@ function sourceError(e, extra = {}) {
     console.error('MarketCheck says the plan is out of calls', e.status);
     return new ApiError('source-busy', 503, extra);
   }
-  console.error('MarketCheck failed', e?.name, e?.message);
+  console.error('MarketCheck failed', e?.name, e?.status ?? '', redact(e?.message));
   return new ApiError('source', 502, extra);
 }
 

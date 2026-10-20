@@ -240,6 +240,20 @@ test('MarketCheck problems are reported without the key, and a refused key is th
   assert.doesNotMatch(JSON.stringify([r.body, ok.body]), new RegExp(MC_KEY));
 });
 
+test('logs never carry a VIN or a key', async (t) => {
+  const lines = [];
+  t.mock.method(console, 'error', (...a) => lines.push(a.join(' ')));
+  stores.marketcheckStatus = 500;
+  await post('/v1/preview', { vin: VIN });
+  stores.marketcheckStatus = 401;
+  await post('/v1/report', { vin: VIN, platform: 'ios', transactionId: '2000000111' });
+  assert.ok(lines.length >= 2, JSON.stringify(lines));
+  for (const l of lines) {
+    assert.doesNotMatch(l, new RegExp(VIN));
+    assert.doesNotMatch(l, new RegExp(MC_KEY));
+  }
+});
+
 test('missing settings are a server problem, not the buyer\'s', async () => {
   delete env.APPLE_PRIVATE_KEY;
   assert.deepEqual((await post('/v1/report', { vin: VIN, platform: 'ios', transactionId: '2000000111' })).body, { error: 'config' });
