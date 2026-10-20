@@ -89,21 +89,8 @@ const money = (c) => fmtMoney(c, lang);
 const distance = (value, unit) => fmtDistance(value, unit, lang);
 const reading = (r) => fmtReading(r, lang);
 
-// NHTSA's recall feed writes dates as day/month/year.
-function parseNhtsaDate(s) {
-  const m = String(s ?? '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (m) {
-    let [day, month] = [Number(m[1]), Number(m[2])];
-    if (month > 12 && day <= 12) [day, month] = [month, day];
-    if (month >= 1 && month <= 12) return { y: Number(m[3]), m: month, d: day };
-  }
-  const iso = String(s ?? '').match(/^(\d{4})-(\d{2})-(\d{2})/);
-  return iso ? { y: Number(iso[1]), m: Number(iso[2]), d: Number(iso[3]) } : null;
-}
-const pad = (n) => String(n).padStart(2, '0');
-function nhtsaDate(s) { const p = parseNhtsaDate(s); return p ? date(`${p.y}-${pad(p.m)}-${pad(p.d)}`) : String(s ?? ''); }
-const nhtsaTime = (s) => { const p = parseNhtsaDate(s); return p ? Date.UTC(p.y, p.m - 1, p.d) : 0; };
-const newestFirst = (a, b) => nhtsaTime(b.date) - nhtsaTime(a.date);
+// Recall dates arrive as YYYY-MM-DD (src/dates.js); one that couldn't be read sorts last.
+const newestFirst = (a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0);
 
 const vehicleName = (v) => [v.year, makeName(v.make), v.model, v.trim].filter(Boolean).join(' ');
 const ymm = (v) => [makeName(v.make), v.model, v.year].filter(Boolean).join(' ');
@@ -446,7 +433,7 @@ function recallItem(x) {
   return `<article class="recall">
     ${flags ? `<div class="flags">${flags}</div>` : ''}
     <h3>${esc(component(x.component) || t('recall.title'))}</h3>
-    <p class="recall-meta">${esc(nhtsaDate(x.date))} · NHTSA <span class="mono">${esc(x.campaign)}</span></p>
+    <p class="recall-meta">${esc(date(x.date))} · NHTSA <span class="mono">${esc(x.campaign)}</span></p>
     ${reasons.map((m) => `<p class="why">${icon('info')}<span>${esc(t('recall.notThis'))} ${esc(m)}</span></p>`).join('')}
     ${x.summary ? `<p class="recall-summary${long ? ' clamp' : ''}" lang="en">${esc(x.summary)}</p>${long ? `<button type="button" class="link-btn" data-more>${esc(t('recall.more'))}</button>` : ''}` : ''}
     ${x.consequence || x.remedy ? `<details class="more-details"><summary>${esc(t('recall.riskRemedy'))}</summary>${x.consequence ? `<p><b>${esc(t('recall.risk'))}</b> <span lang="en">${esc(x.consequence)}</span></p>` : ''}${x.remedy ? `<p><b>${esc(t('recall.remedy'))}</b> <span lang="en">${esc(x.remedy)}</span></p>` : ''}</details>` : ''}

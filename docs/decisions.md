@@ -89,3 +89,15 @@ marked `lang="en"`, since translating it would mean sending it to a translation 
 (decision 3). The Transport Canada link stays on the English page because the French address
 couldn't be confirmed from here. The French was written by the AI that wrote the code and
 still needs a fluent speaker's review (UX-09).
+
+## 11. Paid listing history in the CLI only, with the user's own key (2026-10-20)
+
+Partly supersedes decision 1 for the CLI. The owner chose to add MarketCheck's History by VIN:
+the online sale listings recorded for a VIN, with asking prices and advertised mileage. It's
+paid and keyed, so it runs only in the CLI and only when `MARKETCHECK_API_KEY` or
+`~/.marketcheck_key` holds a key; the page is unchanged and still contacts nothing but NHTSA
+(decision 3), because a key in a public page's URLs could be copied and billed. MarketCheck
+names the field `miles` everywhere, but Canadian dealers advertise km, so a listing in a
+province is read as km and CAD; the report says readings are as advertised. MarketCheck's
+US-only NMVTIS title reports ($0.49 each) and its lack of accident and service data were
+reviewed and left out. Accident, lien, ownership and service history stay out of scope.

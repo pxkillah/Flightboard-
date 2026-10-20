@@ -3,6 +3,7 @@
 // Responses are { ResultSet: [ [ {Name, Value:{Literal}} , ... ], ... ] } - one array of
 // name/value cells per row. Column names are matched loosely since TC labels them in prose.
 import { getJson, FormatError } from '../http.js';
+import { isoDate } from '../dates.js';
 
 const BASE = 'https://data.tc.gc.ca/v1.3/api/eng/vehicle-recall-database';
 
@@ -34,7 +35,7 @@ export function parseRecalls(json) {
     out.push({
       source: 'Transport Canada',
       campaign: String(number),
-      date: pick(o, /recall\s*date|date/i),
+      date: isoDate(pick(o, /recall\s*date|date/i), 'mdy'),
       component: pick(o, /system|component/i),
       manufacturerRecallNumber: pick(o, /manufacturer\s*recall/i),
     });

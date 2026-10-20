@@ -1,7 +1,8 @@
 # vehicle-report
 
 A command-line VIN lookup that builds a Carfax-style vehicle report from **free, public
-government data**. It needs no API keys and has no dependencies (Node ≥ 22).
+government data**. It needs no API keys and has no dependencies (Node ≥ 22). With a MarketCheck
+key, the command line can also add the car's online sale listing history (see below).
 
 ```
 $ node bin/vehicle-report.js 1HGCM82633A004352
@@ -48,6 +49,27 @@ Font License, with license files alongside).
 | Owner complaints (crash/fire/injury counts, top components) | NHTSA | `api.nhtsa.gov/complaints/complaintsByVehicle` |
 | Crash-test stars | NHTSA NCAP | `api.nhtsa.gov/SafetyRatings/...` |
 
+Dates from every source are shown as YYYY-MM-DD (NHTSA sends day/month/year, Transport Canada
+month/day/year).
+
+### Listing history (optional, paid, command line only)
+
+With a [MarketCheck](https://developers.marketcheck.com) API key, the command line adds the online
+sale listings MarketCheck has recorded for the VIN: when and where it was listed, new or used,
+asking prices and advertised mileage, grouped into each stay on the market, with a warning when
+an advertised reading is lower than an earlier one. Put the key in `MARKETCHECK_API_KEY` or in
+`~/.marketcheck_key` (readable only by you: `chmod 600`); `--no-history` skips it. The key is
+never printed. MarketCheck's free plan allows 500 calls a month; paid plans charge $0.006 (USD)
+a call, and a lookup makes one call per 50 listings, at most 4.
+
+- It covers dealer websites (US since 2015, Canada since 2018) and Canadian private sellers
+  since 2023, not classified sites such as Kijiji or AutoTrader.ca. "No listings" doesn't
+  mean the car was never sold.
+- Prices and readings are as advertised, not verified. MarketCheck calls the field `miles`,
+  but Canadian dealers advertise km, so a listing in a province is read as km and CAD.
+- It is not accident, service, ownership or lien history. The web page doesn't use it,
+  because a key in a public page could be copied and billed.
+
 Each section is fetched on its own. If one API is down, the report still comes back with that
 section listed under `errors`.
 
@@ -77,7 +99,8 @@ project does not do that.
 ## Privacy
 
 - **What leaves your device:** the VIN goes to NHTSA's VIN decoder (vPIC), and the decoded
-  year, make and model go to NHTSA's recall, complaint and crash-rating services. GitHub
+  year, make and model go to NHTSA's recall, complaint and crash-rating services. The command
+  line also sends the VIN (and your key) to MarketCheck, only when you've set a MarketCheck key. GitHub
   Pages, which hosts the page, sees each page request, including `?vin=` when you open a
   report link.
 - **What stays on your device:** your records and the VINs you check, in this browser's
@@ -87,7 +110,7 @@ project does not do that.
   a github.com address. Nothing is sent until you post it on GitHub, where issues are
   public. Report security problems privately instead (see `SECURITY.md`).
 - The report is free and provided as is. Recalls are matched by model, so confirm with a
-  dealer. Not affiliated with NHTSA, Transport Canada or Carfax.
+  dealer. Not affiliated with NHTSA, Transport Canada, MarketCheck or Carfax.
 
 ## Run it locally
 
