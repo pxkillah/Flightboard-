@@ -9,10 +9,11 @@ const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8');
 const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)?.[1] ?? '';
 const directive = (name) => csp.split(';').map((d) => d.trim().split(/\s+/)).find(([n]) => n === name)?.slice(1) ?? null;
 
-test('the security policy only allows the page itself, NHTSA and MarketCheck', () => {
+test('the security policy only allows the page itself, NHTSA, MarketCheck and the report server', async () => {
   assert.deepEqual(directive('default-src'), ["'none'"]);
   assert.deepEqual(directive('script-src'), ["'self'"]);
-  assert.deepEqual(directive('connect-src'), ['https://vpic.nhtsa.dot.gov', 'https://api.nhtsa.gov', 'https://api.marketcheck.com']);
+  const { REPORT_API } = await import('../src/paid.js');
+  assert.deepEqual(directive('connect-src'), ['https://vpic.nhtsa.dot.gov', 'https://api.nhtsa.gov', 'https://api.marketcheck.com', ...(REPORT_API ? [REPORT_API] : [])]);
   assert.match(html, /<meta name="referrer" content="no-referrer">/);
 });
 

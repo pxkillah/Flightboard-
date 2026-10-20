@@ -7,7 +7,8 @@ import { history as mcHistory, summarizeHistory, historyView, isHistoryView, com
 import { HttpError, errorKind } from './src/http.js';
 import { t as translate, pickLang, fmtNumber, fmtDate, fmtMonthYear, fmtDistance, fmtMoney, fmtPrice, LOCALE } from './src/i18n.js';
 import { regionName, regionOptions, STATES } from './src/regions.js';
-import { isApp, saveFile, restoreSaved, mirrorSaved, canScan, scanBarcodes, askForRating } from './native.js';
+import { isApp, saveFile, restoreSaved, mirrorSaved, canScan, scanBarcodes, askForRating, configurePurchases, productPrice, buyProduct, openPurchases, finishPurchase } from './native.js';
+import { REPORT_API, PRODUCT_ID, askPreview, askReport, isProof, sameProof, claimOutcome, paidProblemKey } from './src/paid.js';
 
 const $ = (s, root = document) => root.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -24,8 +25,12 @@ const LANG_KEY = `${STORE}:lang`;
 const MC_KEY = `${STORE}:marketcheck`;
 const MC_LISTINGS = `${STORE}:listings`;
 const MC_SIGNUP = 'https://developers.marketcheck.com';
+// Reports bought in the app, by VIN (the store's reference to each purchase), and the VIN
+// each purchase in progress is for, by the random ID attached to it (decision 16).
+const UNLOCKS = `${STORE}:unlocks`;
+const PENDING = `${STORE}:pending`;
 // What the app also keeps in the phone's own settings store (native.js).
-const SAVED_KEYS = [STORE, LANG_KEY];
+const SAVED_KEYS = [STORE, LANG_KEY, UNLOCKS, PENDING];
 const TC_RECALLS = 'https://tc.canada.ca/en/road-transportation/motor-vehicle-safety/motor-vehicle-safety-recalls-database';
 const ACRONYMS = new Set(['ABS', 'ESC', 'TPMS', 'AWD', 'RWD', 'FWD', '4WD', '2WD', 'LED', 'HVAC', 'EVAP', 'EGR', 'ECM', 'PCM', 'SRS', 'USA', 'SUV', 'MPV', 'CNG', 'LPG', 'EV', 'HEV', 'PHEV', 'BEV', 'DRL', 'ACC', 'NHTSA', 'II', 'III', 'GMC', 'BMW', 'LLC']);
 
@@ -50,7 +55,9 @@ function initLang() {
 // data-i18n-attr sets attributes ("placeholder:key,aria-label:key").
 function applyStatic() {
   document.documentElement.lang = LOCALE[lang];
-  for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
+  // The paid app sends the VIN to its own server too, so its footer says so (decision 16).
+  const paidText = { 'foot.data': 'foot.dataPaid', 'foot.stored': 'foot.storedPaid' };
+  for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(paidMode() && paidText[el.dataset.i18n] || el.dataset.i18n);
   for (const el of document.querySelectorAll('[data-i18n-html]')) el.innerHTML = t(el.dataset.i18nHtml);
   for (const el of document.querySelectorAll('[data-i18n-attr]')) {
     for (const pair of el.dataset.i18nAttr.split(',')) {
@@ -390,6 +397,14 @@ function renderReport() {
         <p class="gap-top"><button type="button" class="btn primary" data-retry>${icon('refresh')}${esc(t('common.tryAgain'))}</button></p>`))
       + '<section class="panel" id="records"></section>';
     renderRecords();
+    return;
+  }
+  if (isLocked(r.vin)) {
+    // Safety warnings and My records stay free; the rest is the paid report.
+    $('#report').innerHTML = identity(r) + alertBanner(r) + offerPanel(r) + '<section class="panel" id="records"></section>';
+    renderRecords();
+    loadPreview(r.vin);
+    loadPrice();
     return;
   }
   $('#report').innerHTML = identity(r) + alertBanner(r) + '<div class="tiles" id="tiles"></div>'
@@ -847,27 +862,32 @@ function renderListings() {
   const view = hit?.view;
   const { loading, problem } = listing.vin === current.vin ? listing : {};
   const aside = view?.count ? [t('listing.ads', { n: view.count }), dateRange(view.from, view.to)].filter(Boolean).join(' · ') : '';
-  const actions = key
+  const paidReport = paidMode();
+  const proof = paidReport ? unlockFor(current.vin) : null;
+  const actions = paidReport ? (proof ? `<button type="button" class="btn secondary small" data-act="listings">${icon('refresh')}${esc(t('listing.again'))}</button>` : '')
+    : key
     ? `<button type="button" class="btn ${view ? 'secondary' : 'primary'} small" data-act="listings">${icon(view ? 'refresh' : 'search')}${esc(t(view ? 'listing.again' : 'listing.show'))}</button>
       <button type="button" class="btn ghost small" data-act="mc-key">${icon('key')}${esc(t('listing.key'))}</button>`
     : `<button type="button" class="btn primary small" data-act="mc-key">${icon('plus')}${esc(t('listing.addKey'))}</button>
       <a class="btn ghost small" href="${MC_SIGNUP}" target="_blank" rel="noopener">${esc(t('listing.getKey'))}${icon('external')}</a>`;
-  const fine = [view && t('listing.checked', { date: date(localDate(new Date(hit.at))) }), view?.count && t('listing.note'), t('listing.cost')].filter(Boolean).join(' ');
+  const fine = [view && t('listing.checked', { date: date(localDate(new Date(hit.at))) }), view?.count && t('listing.note'), !paidReport && t('listing.cost')].filter(Boolean).join(' ');
+  const intro = paidReport ? (proof ? (proof.confirmed ? 'paid.listingsAgain' : 'paid.confirming') : 'paid.exampleListings') : key ? 'listing.ready' : 'listing.intro';
+  const problemKey = !problem ? null : paidReport ? paidProblemKey(problem) : `listing.${LISTING_PROBLEMS.includes(problem) ? problem : 'other'}`;
   // Redrawing removes the button that was tapped; the heading keeps the place for keyboard
   // and screen reader users.
   const focused = el.contains(document.activeElement);
   el.setAttribute('aria-busy', String(Boolean(loading)));
   el.innerHTML = `<header class="panel-head"><span class="panel-icon">${icon('tag')}</span><h2 tabindex="-1">${esc(t('listing.title'))}</h2>${aside ? `<span class="panel-aside">${esc(aside)}</span>` : ''}</header>
-    ${problem ? `<p class="why crit listing-error">${icon('alert')}<span>${esc(t(`listing.${LISTING_PROBLEMS.includes(problem) ? problem : 'other'}`))}</span></p>` : ''}
-    ${loading ? `<p class="empty-line info">${icon('refresh', 'spin')}<span>${esc(t('listing.loading'))}</span></p>`
-      : view ? historyBody(view) : `<p class="listing-intro">${esc(t(key ? 'listing.ready' : 'listing.intro'))}</p>`}
-    ${loading ? '' : `<div class="${view ? 'tools' : 'actions'}">${actions}</div>`}
+    ${problemKey ? `<p class="why crit listing-error">${icon('alert')}<span>${esc(t(problemKey))}</span></p>` : ''}
+    ${loading ? `<p class="empty-line info">${icon('refresh', 'spin')}<span>${esc(t(paidReport && !proof?.confirmed ? 'paid.confirming' : 'listing.loading'))}</span></p>`
+      : view ? historyBody(view) : `<p class="listing-intro">${esc(t(intro))}</p>`}
+    ${loading || !actions ? '' : `<div class="${view ? 'tools' : 'actions'}">${actions}</div>`}
     <p class="fine gap-top">${esc(fine)}</p>`;
   if (focused) el.querySelector('h2').focus();
 }
 
-async function loadListings() {
-  const vin = current.vin;
+async function loadListings(vin = current.vin) {
+  if (paidMode()) { await loadPaidListings(vin); return; }
   const apiKey = mcKey();
   if (!vin || (listing.vin === vin && listing.loading)) return;
   if (!apiKey) { openKeySheet(); return; }
@@ -885,6 +905,173 @@ async function loadListings() {
   if (view) saveListings(vin, view);
   if (listing.vin === vin) listing = { vin, loading: false, problem };
   if (current.vin === vin) renderListings();
+}
+
+// ---------- Paid reports (app only, decision 16) ----------
+// In the app, once the server's address is set (src/paid.js), a report opens fully only for a
+// VIN bought through the App Store or Google Play. Safety warnings and My records stay free,
+// and the example report stays open. The website is unchanged.
+const paidMode = () => isApp() && Boolean(REPORT_API);
+function readMap(key) {
+  try {
+    const o = JSON.parse(localStorage.getItem(key));
+    return o && typeof o === 'object' && !Array.isArray(o) ? o : {};
+  } catch { return {}; }
+}
+// Also copied to the phone's settings store, so a purchase survives iOS clearing web storage.
+function writeMap(key, o) {
+  const json = Object.keys(o).length ? JSON.stringify(o) : null;
+  try { if (json) localStorage.setItem(key, json); else localStorage.removeItem(key); } catch { /* the native copy still has it */ }
+  mirrorSaved(key, json);
+}
+const unlockFor = (vin) => { const p = readMap(UNLOCKS)[vin]; return isProof(p) ? p : null; };
+function setUnlock(vin, proof) {
+  const all = readMap(UNLOCKS);
+  if (proof) all[vin] = proof; else delete all[vin];
+  writeMap(UNLOCKS, all);
+}
+function forgetPending(proof) {
+  const all = readMap(PENDING);
+  if (proof?.accountToken && proof.accountToken in all) { delete all[proof.accountToken]; writeMap(PENDING, all); }
+}
+const isLocked = (vin) => paidMode() && vin !== EXAMPLE_VIN && !unlockFor(vin);
+
+// previews: the free listing count per VIN ({ state: loading | done | failed }). credits:
+// purchases the store holds that were never used for a VIN. problem: an i18n key.
+const paid = { price: null, previews: {}, buying: false, problem: null, credits: [] };
+let pricePromise = null;
+
+function offerPanel(r) {
+  const pv = paid.previews[r.vin];
+  const listings = !pv || pv.state === 'loading' ? t('paid.listingsChecking')
+    : pv.state === 'failed' ? t('paid.listingsFailed')
+    : !pv.listings ? t('paid.listingsNone')
+    : pv.more ? t('paid.listingsMore', { n: pv.listings }) : t('paid.listings', { n: pv.listings });
+  const items = [
+    ['tag', listings],
+    ['gauge', t('paid.odometer')],
+    ['shield', r.errors.recallsUS ? t('paid.recallsAny') : t('paid.recalls', { n: likelyRecalls(r).length })],
+    ['chat', r.complaints ? t('paid.complaints', { n: r.complaints.total }) : t('paid.complaintsAny')],
+    ['star', r.safetyRatings?.length ? t('paid.ratings') : t('paid.ratingsNone')],
+  ];
+  const credit = paid.credits.length > 0;
+  const label = paid.buying ? t('paid.buying') : credit ? t('paid.useCredit') : paid.price ? t('paid.buyPrice', { price: paid.price }) : t('paid.buy');
+  return `<section class="panel offer" id="offer" aria-busy="${paid.buying}">
+    <header class="panel-head"><span class="panel-icon">${icon('lock')}</span><h2 tabindex="-1">${esc(t('paid.title'))}</h2></header>
+    <ul class="offer-list">${items.map(([ic, text]) => `<li>${icon(ic)}<span>${esc(text)}</span></li>`).join('')}</ul>
+    ${paid.problem ? `<p class="why crit listing-error">${icon('alert')}<span>${esc(t(paid.problem))}</span></p>` : ''}
+    <button type="button" class="btn primary offer-btn" data-act="${credit ? 'use-credit' : 'buy'}"${paid.buying ? ' disabled' : ''}>${paid.buying ? icon('refresh', 'spin') : icon('lock')}${esc(label)}</button>
+    <p class="fine gap-top">${esc(t('paid.note'))}</p>
+  </section>`;
+}
+function renderOffer() {
+  const el = $('#offer');
+  if (!el || !current.report || !isLocked(current.vin)) return;
+  const focused = el.contains(document.activeElement);
+  el.outerHTML = offerPanel(current.report);
+  if (focused) $('#offer h2').focus();
+}
+
+// The free count costs the owner a MarketCheck call, so it's asked once per VIN per session.
+async function loadPreview(vin) {
+  if (paid.previews[vin] && paid.previews[vin].state !== 'failed') return;
+  paid.previews[vin] = { state: 'loading' };
+  const res = await askPreview(vin);
+  paid.previews[vin] = res.ok ? { state: 'done', listings: Number(res.body.listings) || 0, more: Boolean(res.body.more) } : { state: 'failed' };
+  if (current.vin === vin) renderOffer();
+}
+function loadPrice() {
+  pricePromise ??= productPrice(PRODUCT_ID)
+    .then((price) => { paid.price = price; renderOffer(); })
+    .catch(() => { pricePromise = null; });
+}
+
+// Asks the server about a purchase and settles it: saves which VIN it opens and the listing
+// history, and tells the store the report was delivered. vin null asks which VIN it was for.
+async function settle(vin, proof) {
+  const res = await askReport(vin, proof);
+  const outcome = claimOutcome(res, vin);
+  const bound = res.body.vin ?? vin;
+  if (outcome === 'unlocked' || outcome === 'moved') {
+    if (vin && bound !== vin) setUnlock(vin, null);
+    setUnlock(bound, { ...proof, at: unlockFor(bound)?.at ?? Date.now(), confirmed: true });
+    if (isHistoryView(res.body.view)) saveListings(bound, res.body.view);
+    forgetPending(proof);
+    await finishPurchase(proof);
+  } else if (outcome === 'rejected') {
+    if (vin && sameProof(unlockFor(vin), proof)) setUnlock(vin, null);
+    forgetPending(proof);
+    await finishPurchase(proof);
+  }
+  return { outcome, vin: bound, error: res.ok ? null : res.body.error ?? 'server' };
+}
+
+async function loadPaidListings(vin) {
+  const proof = unlockFor(vin);
+  if (!vin || !proof || (listing.vin === vin && listing.loading)) return;
+  const epoch = erasures;
+  listing = { vin, loading: true, problem: null };
+  if (current.vin === vin) renderListings();
+  const r = await settle(vin, proof);
+  if (epoch !== erasures) return;
+  listing = { vin, loading: false, problem: r.error };
+  if (r.outcome === 'moved') toast(t('paid.moved', { vin: r.vin }), { long: true });
+  if (r.outcome === 'rejected') paid.problem = 'paid.errRejected';
+  if (current.vin !== vin) return;
+  if (r.outcome === 'unlocked' || r.outcome === 'retry') renderListings(); else renderReport();
+}
+
+async function buyReport(vin) {
+  if (!vin || paid.buying) return;
+  paid.buying = true;
+  paid.problem = null;
+  renderOffer();
+  // Noted before paying, so a purchase finished while the app was closed still finds its VIN.
+  const accountToken = crypto.randomUUID();
+  writeMap(PENDING, { ...readMap(PENDING), [accountToken]: vin });
+  let proof = null;
+  try {
+    proof = await buyProduct(PRODUCT_ID, accountToken);
+    if (proof === null) forgetPending({ accountToken });
+  } catch {
+    paid.problem = 'paid.errBuy';
+  }
+  paid.buying = false;
+  if (!isProof(proof)) { renderOffer(); return; }
+  setUnlock(vin, { ...proof, at: Date.now(), confirmed: false });
+  toast(t('toast.unlocked'));
+  if (current.vin === vin) renderReport();
+  await loadPaidListings(vin);
+}
+
+async function useCredit(vin) {
+  const proof = paid.credits.shift();
+  if (!vin || !proof) return;
+  setUnlock(vin, { ...proof, at: Date.now(), confirmed: false });
+  renderReport();
+  await loadPaidListings(vin);
+}
+
+// At launch: purchases the store still holds open (the app was closed mid-purchase, or the
+// server couldn't be reached) are settled; ones never used for a VIN become credits. Then any
+// purchase saved here that the server hasn't confirmed is tried again.
+async function recoverPurchases() {
+  if (!paidMode()) return;
+  await configurePurchases();
+  let open = [];
+  try { open = (await openPurchases(PRODUCT_ID)).filter(isProof); } catch { /* the store isn't available */ }
+  const credits = [];
+  for (const proof of open) {
+    const unlocks = readMap(UNLOCKS);
+    const known = Object.keys(unlocks).find((v) => sameProof(unlocks[v], proof));
+    const vin = known ?? readMap(PENDING)[proof.accountToken] ?? null;
+    if (vin && !known) setUnlock(vin, { ...proof, at: Date.now(), confirmed: false });
+    if ((await settle(vin, proof)).outcome === 'credit') credits.push(proof);
+  }
+  const unconfirmed = Object.entries(readMap(UNLOCKS)).filter(([, p]) => isProof(p) && !p.confirmed && !open.some((o) => sameProof(o, p)));
+  for (const [vin, p] of unconfirmed) await settle(vin, p);
+  paid.credits = credits;
+  if ((open.length || unconfirmed.length) && current.report?.vehicle?.make) renderReport();
 }
 
 // ---------- Add-record sheet ----------
@@ -1080,7 +1267,7 @@ function forgetVehicle() {
   toast(t('toast.removed'));
 }
 function eraseAll() {
-  if (!confirm(t('confirm.erase'))) return;
+  if (!confirm(t(paidMode() && Object.keys(readMap(UNLOCKS)).length ? 'confirm.eraseBought' : 'confirm.erase'))) return;
   try {
     for (const key of Object.keys(localStorage)) if (key === STORE || key.startsWith(`${STORE}:`)) localStorage.removeItem(key);
     for (const key of SAVED_KEYS) mirrorSaved(key, null);
@@ -1178,6 +1365,8 @@ document.addEventListener('click', (e) => {
   else if (el.matches('[data-act="forget"]')) forgetVehicle();
   else if (el.matches('[data-act="erase"]')) eraseAll();
   else if (el.matches('[data-act="listings"]')) loadListings();
+  else if (el.matches('[data-act="buy"]')) buyReport(current.vin);
+  else if (el.matches('[data-act="use-credit"]')) useCredit(current.vin);
   else if (el.matches('[data-act="mc-key"]')) openKeySheet();
   else if (el.matches('[data-act="mc-remove"]')) removeKey();
 });
@@ -1211,3 +1400,4 @@ await restoreSaved(SAVED_KEYS);
 initLang();
 applyStatic();
 route();
+recoverPurchases();

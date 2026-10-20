@@ -17,6 +17,15 @@ for (const f of ['privacy.html', 'support.html']) {
   else if (email && !read(f).includes(email)) problems.push(`${f}: doesn't show the support address ${email}.`);
 }
 
+// Paid reports need the server (docs/server.md): its address in src/paid.js and in the page's
+// security policy, and the same product ID as the server.
+const api = read('src/paid.js').match(/export const REPORT_API = '([^']*)'/)?.[1];
+const product = read('src/paid.js').match(/export const PRODUCT_ID = '([^']*)'/)?.[1];
+if (!api) problems.push('src/paid.js: set REPORT_API to the server address (docs/server.md), or the app gives every report away.');
+else if (!/^https:\/\/[^/]+$/.test(api)) problems.push(`src/paid.js: REPORT_API "${api}" must be https://host with no path.`);
+else if (!new RegExp(`connect-src [^;]*${api.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[ ;]`).test(read('index.html'))) problems.push(`index.html: add ${api} to connect-src in the Content-Security-Policy.`);
+if (read('server/wrangler.toml').match(/^PRODUCT_ID = "([^"]+)"/m)?.[1] !== product) problems.push('server/wrangler.toml: PRODUCT_ID must match src/paid.js.');
+
 // www/ must be a fresh copy of the page, or the app ships old code.
 for (const f of ['index.html', 'app.js', 'app.css', 'native.js', 'privacy.html']) {
   const copy = join(mobile, 'www', f);

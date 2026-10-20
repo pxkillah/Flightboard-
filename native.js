@@ -78,3 +78,47 @@ export async function scanBarcodes() {
 export function askForRating() {
   if (isApp()) call('InAppReview', 'requestReview').catch(() => { /* not shown; that's fine */ });
 }
+
+// ---------- In-app purchase (@capgo/native-purchases) ----------
+// Purchases stay unfinished until the server has confirmed them (paid reports, decision 16),
+// so one the app didn't hear about, because it was closed mid-purchase, is delivered again.
+const STORE_PLUGIN = 'NativePurchases';
+// A purchase as the app keeps it. accountToken is the random ID the app attached when buying,
+// which says which VIN it was for if the app was closed before it could note that itself.
+function proofOf(t) {
+  const base = { accountToken: t?.appAccountToken ?? null };
+  return platform() === 'ios'
+    ? { ...base, platform: 'ios', transactionId: String(t?.transactionId ?? '') }
+    : { ...base, platform: 'android', purchaseToken: String(t?.purchaseToken ?? '') };
+}
+export function configurePurchases() {
+  return call(STORE_PLUGIN, 'configure', { autoFinishTransactions: false }).catch(() => { /* older plugin: config file sets it */ });
+}
+// The store's price for the product, in the person's own currency ("11,99 $"), or null.
+export async function productPrice(id) {
+  const { products } = await call(STORE_PLUGIN, 'getProducts', { productIdentifiers: [id], productType: 'inapp' });
+  return (products ?? []).find((p) => p.identifier === id)?.priceString ?? null;
+}
+// Opens the store's payment sheet. Returns the purchase, or null when the person cancelled.
+export async function buyProduct(id, accountToken) {
+  try {
+    const t = await call(STORE_PLUGIN, 'purchaseProduct', {
+      productIdentifier: id, productType: 'inapp', appAccountToken: accountToken, isConsumable: false, autoAcknowledgePurchases: false,
+    });
+    return proofOf(t);
+  } catch (e) {
+    if (cancelled(e)) return null;
+    throw e;
+  }
+}
+// Purchases of the product the store still holds open: unfinished on iOS, not yet consumed on
+// Android. Each is either waiting for the server, or bought but never used for a VIN.
+export async function openPurchases(id) {
+  const { purchases } = await call(STORE_PLUGIN, 'getPurchases', { productType: 'inapp' });
+  return (purchases ?? []).filter((t) => t.productIdentifier === id && (platform() !== 'ios' || t.needsFinish !== false)).map(proofOf);
+}
+// iOS: tells StoreKit the report was delivered. Android purchases are consumed by the server.
+export function finishPurchase(proof) {
+  if (proof?.platform !== 'ios') return Promise.resolve();
+  return call(STORE_PLUGIN, 'finishTransaction', { transactionId: proof.transactionId }).catch(() => { /* delivered again next launch */ });
+}

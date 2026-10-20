@@ -3,6 +3,16 @@
   "appName": "Car Report",
   "webDir": "www",
   "backgroundColor": "#edf2f3",
-  "ios": { "contentInset": "never", "limitsNavigationsToAppBoundDomains": false },
-  "android": { "allowMixedContent": false }
+  "ios": {
+    "contentInset": "never",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "NativePurchases": {
+      "autoFinishTransactions": false
+    }
+  }
 }
