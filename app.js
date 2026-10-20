@@ -3,8 +3,10 @@ import { validateVin, normalizeVin } from './src/vin.js';
 import { feedbackUrl } from './src/feedback.js';
 import { recallMismatch } from './src/recallMatch.js';
 import { makeRecord, sortRecords, summarize, historyText, parseBackup, mergeRecords, recordsCsv, readingOf, convert, fmtReading, localDate, readStore, backupText, pruneLookups, MAX_BACKUP_BYTES } from './src/records.js';
-import { t as translate, pickLang, fmtNumber, fmtDate, fmtMonthYear, fmtDistance, fmtMoney, LOCALE } from './src/i18n.js';
-import { regionName, regionOptions } from './src/regions.js';
+import { history as mcHistory, summarizeHistory, historyView, isHistoryView, compareWithAds } from './src/sources/marketcheck.js';
+import { HttpError, errorKind } from './src/http.js';
+import { t as translate, pickLang, fmtNumber, fmtDate, fmtMonthYear, fmtDistance, fmtMoney, fmtPrice, LOCALE } from './src/i18n.js';
+import { regionName, regionOptions, STATES } from './src/regions.js';
 
 const $ = (s, root = document) => root.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -16,6 +18,11 @@ const EXAMPLE_VIN = '1HGCM82633A004352';
 const STORE = 'vin-report:v1';
 // Under the store's prefix, so Erase all clears it too.
 const LANG_KEY = `${STORE}:lang`;
+// The visitor's own MarketCheck key and the listing histories it fetched, also under the
+// prefix. The key leaves this device only in calls to MarketCheck (decision 13).
+const MC_KEY = `${STORE}:marketcheck`;
+const MC_LISTINGS = `${STORE}:listings`;
+const MC_SIGNUP = 'https://developers.marketcheck.com';
 const TC_RECALLS = 'https://tc.canada.ca/en/road-transportation/motor-vehicle-safety/motor-vehicle-safety-recalls-database';
 const ACRONYMS = new Set(['ABS', 'ESC', 'TPMS', 'AWD', 'RWD', 'FWD', '4WD', '2WD', 'LED', 'HVAC', 'EVAP', 'EGR', 'ECM', 'PCM', 'SRS', 'USA', 'SUV', 'MPV', 'CNG', 'LPG', 'EV', 'HEV', 'PHEV', 'BEV', 'DRL', 'ACC', 'NHTSA', 'II', 'III', 'GMC', 'BMW', 'LLC']);
 
@@ -89,21 +96,8 @@ const money = (c) => fmtMoney(c, lang);
 const distance = (value, unit) => fmtDistance(value, unit, lang);
 const reading = (r) => fmtReading(r, lang);
 
-// NHTSA's recall feed writes dates as day/month/year.
-function parseNhtsaDate(s) {
-  const m = String(s ?? '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (m) {
-    let [day, month] = [Number(m[1]), Number(m[2])];
-    if (month > 12 && day <= 12) [day, month] = [month, day];
-    if (month >= 1 && month <= 12) return { y: Number(m[3]), m: month, d: day };
-  }
-  const iso = String(s ?? '').match(/^(\d{4})-(\d{2})-(\d{2})/);
-  return iso ? { y: Number(iso[1]), m: Number(iso[2]), d: Number(iso[3]) } : null;
-}
-const pad = (n) => String(n).padStart(2, '0');
-function nhtsaDate(s) { const p = parseNhtsaDate(s); return p ? date(`${p.y}-${pad(p.m)}-${pad(p.d)}`) : String(s ?? ''); }
-const nhtsaTime = (s) => { const p = parseNhtsaDate(s); return p ? Date.UTC(p.y, p.m - 1, p.d) : 0; };
-const newestFirst = (a, b) => nhtsaTime(b.date) - nhtsaTime(a.date);
+// Recall dates arrive as YYYY-MM-DD (src/dates.js); one that couldn't be read sorts last.
+const newestFirst = (a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0);
 
 const vehicleName = (v) => [v.year, makeName(v.make), v.model, v.trim].filter(Boolean).join(' ');
 const ymm = (v) => [makeName(v.make), v.model, v.year].filter(Boolean).join(' ');
@@ -175,6 +169,7 @@ function loadStore() {
   }
   return JSON.parse(storeCache.json);
 }
+const storageProblem = (e) => (e?.name === 'QuotaExceededError' || e?.name === 'NS_ERROR_DOM_QUOTA_REACHED' ? t('store.full') : t('store.blocked'));
 // Returns null when saved, or a message saying why not.
 function saveStore(d) {
   if (storeCache.problem === 'newer') return t('store.newer');
@@ -182,7 +177,7 @@ function saveStore(d) {
     localStorage.setItem(STORE, JSON.stringify(d));
     return null;
   } catch (e) {
-    return e?.name === 'QuotaExceededError' || e?.name === 'NS_ERROR_DOM_QUOTA_REACHED' ? t('store.full') : t('store.blocked');
+    return storageProblem(e);
   }
 }
 const recordsFor = (vin) => loadStore().vehicles[vin]?.records ?? [];
@@ -216,6 +211,42 @@ function unitFor(vin, records = recordsFor(vin)) {
   const saved = loadStore().vehicles[vin]?.unit;
   if (saved) return saved;
   return summarize(records).latestReading?.unit ?? 'km';
+}
+function mcKey() {
+  try { return localStorage.getItem(MC_KEY) || null; } catch { return null; }
+}
+// Saves the key, or removes it when there's none. Returns null, or a message saying why not.
+function setMcKey(key) {
+  try {
+    if (key) localStorage.setItem(MC_KEY, key); else localStorage.removeItem(MC_KEY);
+    return null;
+  } catch (e) {
+    return storageProblem(e);
+  }
+}
+// Listing histories already fetched, by VIN: { at, view }. Each check is billed to the
+// visitor's key, so a history is shown from here until they ask again. Each entry is checked
+// before it's drawn; one that doesn't pass is treated as never fetched.
+function savedListings() {
+  try {
+    const all = JSON.parse(localStorage.getItem(MC_LISTINGS));
+    return all && typeof all === 'object' && !Array.isArray(all) ? all : {};
+  } catch { return {}; }
+}
+function listingsFor(vin) {
+  const all = savedListings();
+  const hit = Object.hasOwn(all, vin) ? all[vin] : null;
+  return hit && Number.isFinite(hit.at) && isHistoryView(hit.view) ? hit : null;
+}
+// Saves a VIN's history, or removes it when there's none, keeping the 20 most recent.
+function saveListings(vin, view) {
+  const all = savedListings();
+  if (view) all[vin] = { at: Date.now(), view }; else delete all[vin];
+  const keep = Object.entries(all).filter(([, x]) => Number.isFinite(x?.at)).sort((a, b) => b[1].at - a[1].at).slice(0, 20);
+  try {
+    if (keep.length) localStorage.setItem(MC_LISTINGS, JSON.stringify(Object.fromEntries(keep)));
+    else localStorage.removeItem(MC_LISTINGS);
+  } catch { /* not saved: the history is fetched again next time */ }
 }
 
 // ---------- Small UI helpers ----------
@@ -357,7 +388,8 @@ function renderReport() {
     return;
   }
   $('#report').innerHTML = identity(r) + alertBanner(r) + '<div class="tiles" id="tiles"></div>'
-    + recallsPanel(r) + '<section class="panel" id="records"></section>' + complaintsPanel(r) + ratingsPanel(r);
+    + recallsPanel(r) + '<section class="panel" id="records"></section><section class="panel" id="listings"></section>'
+    + complaintsPanel(r) + ratingsPanel(r);
   renderRecords();
 }
 
@@ -446,7 +478,7 @@ function recallItem(x) {
   return `<article class="recall">
     ${flags ? `<div class="flags">${flags}</div>` : ''}
     <h3>${esc(component(x.component) || t('recall.title'))}</h3>
-    <p class="recall-meta">${esc(nhtsaDate(x.date))} · NHTSA <span class="mono">${esc(x.campaign)}</span></p>
+    <p class="recall-meta">${esc(date(x.date))} · NHTSA <span class="mono">${esc(x.campaign)}</span></p>
     ${reasons.map((m) => `<p class="why">${icon('info')}<span>${esc(t('recall.notThis'))} ${esc(m)}</span></p>`).join('')}
     ${x.summary ? `<p class="recall-summary${long ? ' clamp' : ''}" lang="en">${esc(x.summary)}</p>${long ? `<button type="button" class="link-btn" data-more>${esc(t('recall.more'))}</button>` : ''}` : ''}
     ${x.consequence || x.remedy ? `<details class="more-details"><summary>${esc(t('recall.riskRemedy'))}</summary>${x.consequence ? `<p><b>${esc(t('recall.risk'))}</b> <span lang="en">${esc(x.consequence)}</span></p>` : ''}${x.remedy ? `<p><b>${esc(t('recall.remedy'))}</b> <span lang="en">${esc(x.remedy)}</span></p>` : ''}</details>` : ''}
@@ -583,6 +615,7 @@ function renderRecords() {
       <div class="tools"><button type="button" class="btn ghost small" data-act="restore">${icon('upload')}${esc(t('records.restoreBackup'))}</button>${forget}</div>${privacy}`;
     chart = null;
     renderTiles();
+    renderListings();
     return;
   }
   const s = summarize(recs, { today: localDate(), lang });
@@ -629,6 +662,8 @@ function renderRecords() {
     </div>${privacy}`;
   renderTiles();
   bindChart(pts, unit);
+  // The listing history compares the ads with the latest reading here.
+  renderListings();
 }
 
 // ---------- Mileage chart ----------
@@ -743,9 +778,114 @@ function hidePoint() {
   if (chart) chart.idx = -1;
 }
 
+// ---------- Listing history ----------
+// Ads for this VIN from MarketCheck (decision 13). Nothing goes to MarketCheck until the
+// visitor taps the button, and then only with the key they saved on this device.
+let listing = { vin: null, loading: false, problem: null };
+// Bumped by Remove vehicle and Erase all, so an answer already on its way isn't saved after.
+let erasures = 0;
+
+const LISTING_PROBLEMS = ['badKey', 'quota', 'unreachable', 'timeout', 'unavailable', 'format'];
+function listingProblem(e) {
+  if (e instanceof HttpError && (e.status === 401 || e.status === 403)) return 'badKey';
+  if (e instanceof HttpError && (e.status === 402 || e.status === 429)) return 'quota';
+  return errorKind(e);
+}
+// MarketCheck sends a province or state as its postal code (ON, NY); stored regions write a
+// state as US-NY.
+const adRegion = (r) => (r && Object.hasOwn(STATES, r) ? regionName(`US-${r}`, lang) : regionName(r, lang));
+const dateRange = (from, to) => (!from ? '' : !to || to === from ? date(from) : `${date(from)} – ${date(to)}`);
+const odo = (r) => distance(r.value, r.unit);
+
+// One stay on the market: one seller, new or used, relisted within six months.
+function stintItem(s) {
+  const condition = String(s.condition ?? '').toLowerCase();
+  const sellerType = String(s.sellerType ?? '').toLowerCase();
+  const seller = sellerType === 'dealer' ? t('listing.dealer') : /^(private|fsbo)$/.test(sellerType) ? t('listing.private') : '';
+  const kind = [t(condition === 'new' ? 'listing.new' : condition === 'used' ? 'listing.used' : 'listing.listed'), seller].filter(Boolean).join(' · ');
+  const price = (p) => fmtPrice(p, s.currency, lang);
+  const prices = s.firstPrice && s.lastPrice && s.firstPrice !== s.lastPrice ? `${price(s.firstPrice)} → ${price(s.lastPrice)}`
+    : s.firstPrice || s.lastPrice ? price(s.firstPrice || s.lastPrice) : '';
+  const meta = [[s.city, adRegion(s.region)].filter(Boolean).join(', '), prices, t('listing.ads', { n: s.listings }), s.odometer && odo(s.odometer)].filter(Boolean);
+  return `<li class="entry${condition === 'new' ? ' ad-new' : ''}">
+    <span class="node">${icon('tag')}</span>
+    <div class="entry-body">
+      <p class="entry-head"><span>${esc(kind)}</span><span>${esc(dateRange(s.from, s.to))}</span></p>
+      <p class="entry-title" dir="auto">${esc(s.seller || seller || kind)}</p>
+      <p class="entry-meta">${meta.map((m) => `<bdi>${esc(m)}</bdi>`).join(' · ')}</p>
+    </div>
+  </li>`;
+}
+
+function historyBody(view) {
+  if (!view.count) return `<p class="empty-line info">${icon('info')}<span>${esc(t('listing.none'))}</span></p>`;
+  const own = summarize(recordsFor(current.vin)).latestReading;
+  const cmp = compareWithAds(view, own);
+  const pills = [];
+  if (view.issues.length) pills.push(pill('crit', 'alert', t('listing.odoIssues', { n: view.issues.length })));
+  else if (view.readings.length >= 2) pills.push(pill('good', 'check', t('listing.odoOk')));
+  if (cmp) pills.push(cmp.ok ? pill('good', 'check', t('listing.ownOk')) : pill('crit', 'alert', t('listing.ownBad')));
+  const lines = view.issues.map((i) => t('listing.issue', { date: date(i.reading.date), reading: odo(i.reading), previous: odo(i.previous), previousDate: date(i.previous.date) }));
+  if (cmp && !cmp.ok) {
+    lines.push(t(cmp.ad.date <= own.date ? 'listing.ownLower' : 'listing.adLower', { own: odo(own), ownDate: date(own.date), ad: odo(cmp.ad), adDate: date(cmp.ad.date) }));
+  }
+  return `${pills.length ? `<div class="status-row">${pills.join('')}</div>` : ''}
+    ${lines.length ? `<div class="flag-lines">${lines.map((l) => `<p class="why crit">${icon('alert')}<span>${esc(l)}</span></p>`).join('')}</div>` : ''}
+    <ol class="timeline ads">${[...view.stints].reverse().map(stintItem).join('')}</ol>`;
+}
+
+function renderListings() {
+  const el = $('#listings');
+  if (!el || !current.vin) return;
+  const key = mcKey();
+  const hit = listingsFor(current.vin);
+  const view = hit?.view;
+  const { loading, problem } = listing.vin === current.vin ? listing : {};
+  const aside = view?.count ? [t('listing.ads', { n: view.count }), dateRange(view.from, view.to)].filter(Boolean).join(' · ') : '';
+  const actions = key
+    ? `<button type="button" class="btn ${view ? 'secondary' : 'primary'} small" data-act="listings">${icon(view ? 'refresh' : 'search')}${esc(t(view ? 'listing.again' : 'listing.show'))}</button>
+      <button type="button" class="btn ghost small" data-act="mc-key">${icon('key')}${esc(t('listing.key'))}</button>`
+    : `<button type="button" class="btn primary small" data-act="mc-key">${icon('plus')}${esc(t('listing.addKey'))}</button>
+      <a class="btn ghost small" href="${MC_SIGNUP}" target="_blank" rel="noopener">${esc(t('listing.getKey'))}${icon('external')}</a>`;
+  const fine = [view && t('listing.checked', { date: date(localDate(new Date(hit.at))) }), view?.count && t('listing.note'), t('listing.cost')].filter(Boolean).join(' ');
+  // Redrawing removes the button that was tapped; the heading keeps the place for keyboard
+  // and screen reader users.
+  const focused = el.contains(document.activeElement);
+  el.setAttribute('aria-busy', String(Boolean(loading)));
+  el.innerHTML = `<header class="panel-head"><span class="panel-icon">${icon('tag')}</span><h2 tabindex="-1">${esc(t('listing.title'))}</h2>${aside ? `<span class="panel-aside">${esc(aside)}</span>` : ''}</header>
+    ${problem ? `<p class="why crit listing-error">${icon('alert')}<span>${esc(t(`listing.${LISTING_PROBLEMS.includes(problem) ? problem : 'other'}`))}</span></p>` : ''}
+    ${loading ? `<p class="empty-line info">${icon('refresh', 'spin')}<span>${esc(t('listing.loading'))}</span></p>`
+      : view ? historyBody(view) : `<p class="listing-intro">${esc(t(key ? 'listing.ready' : 'listing.intro'))}</p>`}
+    ${loading ? '' : `<div class="${view ? 'tools' : 'actions'}">${actions}</div>`}
+    <p class="fine gap-top">${esc(fine)}</p>`;
+  if (focused) el.querySelector('h2').focus();
+}
+
+async function loadListings() {
+  const vin = current.vin;
+  const apiKey = mcKey();
+  if (!vin || (listing.vin === vin && listing.loading)) return;
+  if (!apiKey) { openKeySheet(); return; }
+  const epoch = erasures;
+  listing = { vin, loading: true, problem: null };
+  renderListings();
+  let view = null;
+  let problem = null;
+  try {
+    view = historyView(summarizeHistory(await mcHistory(vin, { apiKey })));
+  } catch (e) {
+    problem = listingProblem(e);
+  }
+  if (epoch !== erasures) return;
+  if (view) saveListings(vin, view);
+  if (listing.vin === vin) listing = { vin, loading: false, problem };
+  if (current.vin === vin) renderListings();
+}
+
 // ---------- Add-record sheet ----------
 const sheet = $('#sheet');
 const form = $('#rec-form');
+function closeDialog(d) { if (typeof d.close === 'function') d.close(); else d.removeAttribute('open'); }
 function setType(type) {
   form.querySelector(`input[name="type"][value="${type}"]`).checked = true;
   form.querySelectorAll('[data-for]').forEach((d) => { d.hidden = d.dataset.for !== type; });
@@ -762,7 +902,7 @@ function openSheet() {
   if (typeof sheet.showModal === 'function') sheet.showModal(); else sheet.setAttribute('open', '');
   history.pushState({ ...history.state, sheet: true }, '');
 }
-function closeSheet() { if (typeof sheet.close === 'function') sheet.close(); else sheet.removeAttribute('open'); }
+const closeSheet = () => closeDialog(sheet);
 form.addEventListener('change', (e) => { if (e.target.name === 'type') setType(e.target.value); });
 sheet.addEventListener('click', (e) => { if (e.target === sheet) closeSheet(); });
 form.addEventListener('submit', (e) => {
@@ -803,7 +943,7 @@ function openFeedback() {
   history.pushState({ ...history.state, sheet: true }, '');
   $('#fb-message').focus();
 }
-function closeFeedback() { if (typeof fbSheet.close === 'function') fbSheet.close(); else fbSheet.removeAttribute('open'); }
+const closeFeedback = () => closeDialog(fbSheet);
 $('#feedback-btn').addEventListener('click', openFeedback);
 // A drag that starts in the textarea and ends on the backdrop also clicks the dialog; only
 // a press that starts on the backdrop closes it. The draft is kept until it is sent.
@@ -821,6 +961,48 @@ fbForm.addEventListener('submit', (e) => {
   fbForm.reset();
   toast(t('fb.opened'));
 });
+
+// ---------- MarketCheck key sheet ----------
+// The key is typed into a masked field and saved in this browser only. It's never put back
+// into the page: the sheet shows just its last 4 characters.
+const mcSheet = $('#mc-sheet');
+const mcForm = $('#mc-form');
+let mcPressOnBackdrop = false;
+function openKeySheet() {
+  const key = mcKey();
+  mcForm.reset();
+  $('#mc-err').hidden = true;
+  $('#mc-saved').hidden = !key;
+  $('#mc-saved').textContent = key ? t('mc.saved', { end: key.slice(-4) }) : '';
+  $('#mc-remove').hidden = !key;
+  if (typeof mcSheet.showModal === 'function') mcSheet.showModal(); else mcSheet.setAttribute('open', '');
+  history.pushState({ ...history.state, sheet: true }, '');
+  $('#mc-key').focus();
+}
+const closeKeySheet = () => closeDialog(mcSheet);
+mcSheet.addEventListener('pointerdown', (e) => { mcPressOnBackdrop = e.target === mcSheet; });
+mcSheet.addEventListener('click', (e) => { if (e.target === mcSheet && mcPressOnBackdrop) closeKeySheet(); });
+// However the sheet closes, a typed key isn't left in the field.
+mcSheet.addEventListener('close', () => mcForm.reset());
+mcForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const err = $('#mc-err');
+  const key = $('#mc-key').value.trim();
+  // MarketCheck doesn't publish a key format, so this only catches pasting the wrong thing.
+  const problem = /^[\x21-\x7e]{16,200}$/.test(key) ? setMcKey(key) : t('mc.invalid');
+  if (problem) { err.textContent = problem; err.hidden = false; return; }
+  closeKeySheet();
+  if (listing.vin === current.vin) listing.problem = null;
+  renderListings();
+  toast(t('toast.keySaved'));
+});
+function removeKey() {
+  const problem = setMcKey(null);
+  closeKeySheet();
+  if (listing.vin === current.vin) listing.problem = null;
+  renderListings();
+  toast(problem ?? t('toast.keyRemoved'), { long: Boolean(problem) });
+}
 
 // ---------- Copy, backup, restore ----------
 async function copyHistory() {
@@ -862,6 +1044,9 @@ function forgetVehicle() {
   delete d.vehicles[current.vin];
   const problem = saveStore(d);
   if (problem) { toast(problem, { long: true }); return; }
+  saveListings(current.vin, null);
+  erasures++;
+  listing = { vin: null, loading: false, problem: null };
   history.pushState({}, '', location.pathname);
   showHome();
   toast(t('toast.removed'));
@@ -871,6 +1056,8 @@ function eraseAll() {
   try {
     for (const key of Object.keys(localStorage)) if (key === STORE || key.startsWith(`${STORE}:`)) localStorage.removeItem(key);
   } catch { /* storage blocked: nothing saved */ }
+  erasures++;
+  listing = { vin: null, loading: false, problem: null };
   if (current.vin) renderRecords(); else renderHome();
   toast(t('toast.erased'));
 }
@@ -903,11 +1090,11 @@ $('#restore-file').addEventListener('change', (e) => { const f = e.target.files[
 // Opening a sheet adds a history entry, so Back closes the sheet instead of changing the
 // page underneath it. Closing it any other way takes that entry back off.
 let ownBack = false;
-for (const d of [sheet, fbSheet]) {
+for (const d of [sheet, fbSheet, mcSheet]) {
   d.addEventListener('close', () => { if (history.state?.sheet) { ownBack = true; history.back(); } });
 }
 window.addEventListener('popstate', () => {
-  const open = [sheet, fbSheet].find((d) => d.open);
+  const open = [sheet, fbSheet, mcSheet].find((d) => d.open);
   if (open) { open.close(); return; }
   if (ownBack) { ownBack = false; return; }
   route();
@@ -927,7 +1114,7 @@ document.addEventListener('click', (e) => {
   else if (el.matches('[data-force]')) lookup(input.value, { force: true });
   else if (el.matches('[data-retry]')) lookup(current.vin ?? input.value, { push: false, example: current.example, retry: true });
   else if (el.matches('[data-add]')) openSheet();
-  else if (el.matches('[data-close]')) (fbSheet.contains(el) ? closeFeedback : closeSheet)();
+  else if (el.matches('[data-close]')) closeDialog(el.closest('dialog'));
   else if (el.matches('[data-work]')) { const w = form.elements.work; w.value = w.value ? `${w.value}, ${el.dataset.work}` : el.dataset.work; }
   else if (el.matches('[data-more]')) {
     const clamped = el.previousElementSibling.classList.toggle('clamp');
@@ -961,6 +1148,9 @@ document.addEventListener('click', (e) => {
   else if (el.matches('[data-act="csv"]')) exportCsv();
   else if (el.matches('[data-act="forget"]')) forgetVehicle();
   else if (el.matches('[data-act="erase"]')) eraseAll();
+  else if (el.matches('[data-act="listings"]')) loadListings();
+  else if (el.matches('[data-act="mc-key"]')) openKeySheet();
+  else if (el.matches('[data-act="mc-remove"]')) removeKey();
 });
 
 function route() {

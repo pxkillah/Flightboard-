@@ -1,8 +1,8 @@
 # Runbook
 
 What to do when something goes wrong with VIN Report. The app is a static site on GitHub
-Pages that calls NHTSA from the visitor's browser, so most incidents are NHTSA's or a bad
-deploy.
+Pages that calls NHTSA (and MarketCheck, with a visitor's own key) from the visitor's browser,
+so most incidents are NHTSA's or a bad deploy.
 
 ## The daily live check failed
 
@@ -47,11 +47,28 @@ open the developer tools console on the site and run
 `copy(localStorage.getItem('vin-report:v1:unreadable'))`, paste it into a file, fix it and
 restore it.
 
+## Listing history (MarketCheck) isn't working
+
+The page calls MarketCheck only with the visitor's own key, so most problems are with that
+key, and the panel says which:
+
+| The page says | What to do |
+|---|---|
+| MarketCheck didn't accept your key | The key is wrong or was deleted. Copy it again from the MarketCheck dashboard and save it with **MarketCheck key**. |
+| Your key is out of calls | The plan's calls are used up, or MarketCheck is limiting the rate. Check usage on the MarketCheck dashboard, where usage alerts can be set. |
+| Couldn't reach MarketCheck, took too long, isn't responding | MarketCheck or the connection is down. Try later; a history already saved stays on screen. |
+| Sent this in a form the page doesn't recognize | MarketCheck changed its response. Update `parseHistory` in `src/sources/marketcheck.js` and its tests in `test/marketcheck.test.js`. |
+
+If MarketCheck moves its API to another address, the Content-Security-Policy in `index.html`
+blocks it and every visitor sees "Couldn't reach MarketCheck": add the new address to
+`connect-src`, and to `test/page.test.js`. For a key saved on a lost device, see `SECURITY.md`.
+
 ## GitHub Pages or the account is unavailable
 
 The site is plain static files with no build step. Any static host can serve a checkout of
 `main` (for example Cloudflare Pages or Netlify). Records are stored per site address, so
-visitors need to save a backup on the old address and restore it on the new one.
+visitors need to save a backup on the old address and restore it on the new one. A
+MarketCheck key isn't in backups, so it has to be added again there.
 The code itself is safe as long as the repository or a clone exists. Keep a clone on a
 second device.
 

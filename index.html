@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <!-- GitHub Pages can't send headers, so the security policy is set here. The page may only
-     load its own files and call NHTSA. Style attributes need 'unsafe-inline'. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; manifest-src 'self'; connect-src https://vpic.nhtsa.dot.gov https://api.nhtsa.gov; base-uri 'none'; form-action 'none'; object-src 'none'">
+     load its own files and call NHTSA, and MarketCheck when a visitor has saved their own key
+     and asks for a listing history. Style attributes need 'unsafe-inline'. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; manifest-src 'self'; connect-src https://vpic.nhtsa.dot.gov https://api.nhtsa.gov https://api.marketcheck.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>VIN Report</title>
@@ -48,6 +49,8 @@
   <symbol id="i-door" viewBox="0 0 24 24"><path d="M5 20.5V9l5.5-5.5H19v17z"/><path d="M5 12h14"/><rect x="12.5" y="14.2" width="4.5" height="3.3" rx=".5"/></symbol>
   <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3.5h8.5l4 4v13H6z"/><path d="M14.5 3.5v4h4"/><path d="M9 12h6"/><path d="M9 15.5h6"/></symbol>
   <symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 9.5h18"/><path d="M6.5 14.5h5"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3.5 11.6V5A1.5 1.5 0 0 1 5 3.5h6.6a1.5 1.5 0 0 1 1.06.44l7.4 7.4a1.5 1.5 0 0 1 0 2.12l-6.6 6.6a1.5 1.5 0 0 1-2.12 0l-7.4-7.4a1.5 1.5 0 0 1-.44-1.06z"/><circle cx="8.3" cy="8.3" r="1.3"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="16.5" r="3.5"/><path d="m10 14 9.5-9.5"/><path d="m16.5 7.5 2.5 2.5"/><path d="m13.8 10.2 2 2"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/></symbol>
 </svg>
 
@@ -102,8 +105,8 @@
 </main>
 
 <footer class="wrap site-foot">
-  <p data-i18n="foot.data">Vehicle details, U.S. recalls, owner complaints and crash ratings come from NHTSA, which receives the VIN you enter. Recalls are listed by model, so confirm what applies to a specific vehicle with a dealer. Not affiliated with NHTSA, Transport Canada or Carfax.</p>
-  <p><span data-i18n="foot.stored">Your records and the VINs you check are saved on this device only.</span> <button type="button" class="link-btn" data-act="erase" data-i18n="foot.erase">Erase all VIN Report data on this device</button></p>
+  <p data-i18n="foot.data">Vehicle details, U.S. recalls, owner complaints and crash ratings come from NHTSA, which receives the VIN you enter. If you add a MarketCheck key, MarketCheck receives the VIN when you ask for a listing history. Recalls are listed by model, so confirm what applies to a specific vehicle with a dealer. Not affiliated with NHTSA, Transport Canada, MarketCheck or Carfax.</p>
+  <p><span data-i18n="foot.stored">Your records, the VINs you check and your MarketCheck key, if you add one, are saved on this device only.</span> <button type="button" class="link-btn" data-act="erase" data-i18n="foot.erase">Erase all VIN Report data on this device</button></p>
   <p><a href="https://github.com/pxkillah/Flightboard-" target="_blank" rel="noopener" data-i18n="foot.source">Source code and data notes</a> · <button type="button" class="link-btn lang-btn" data-lang-toggle lang="fr" aria-label="Afficher en français">Français</button></p>
   <button type="button" class="btn secondary small" id="feedback-btn"><svg class="ic" aria-hidden="true"><use href="#i-chat"></use></svg><span data-i18n="foot.feedback">Send feedback</span></button>
 </footer>
@@ -177,6 +180,26 @@
       <button type="button" class="btn ghost" data-close data-i18n="common.cancel">Cancel</button>
       <button type="submit" class="btn primary"><svg class="ic" aria-hidden="true"><use href="#i-external"></use></svg><span data-i18n="fb.continue">Continue on GitHub</span></button>
     </div>
+  </form>
+</dialog>
+
+<dialog class="sheet" id="mc-sheet" aria-labelledby="mc-title">
+  <form id="mc-form" novalidate>
+    <div class="grabber" aria-hidden="true"></div>
+    <div class="sheet-head">
+      <h2 id="mc-title" data-i18n="mc.title">MarketCheck key</h2>
+      <button type="button" class="icon-btn" data-close data-i18n-attr="aria-label:common.close" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"></use></svg></button>
+    </div>
+    <p class="sheet-note" id="mc-saved" hidden></p>
+    <label class="field"><span class="field-label" data-i18n="mc.label">API key</span><input type="password" name="key" id="mc-key" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="200" enterkeyhint="done"></label>
+    <p class="sheet-note" data-i18n="mc.note">Your key is saved only in this browser on this device, and is sent only to MarketCheck when you ask for a listing history. Anyone who uses this browser could find it.</p>
+    <p class="sheet-note"><span data-i18n="mc.revoke">Removing it here doesn't cancel it. To cancel a key, delete it on your MarketCheck dashboard.</span> <a href="https://developers.marketcheck.com" target="_blank" rel="noopener">developers.marketcheck.com</a></p>
+    <p class="form-error" id="mc-err" role="alert" hidden></p>
+    <div class="sheet-actions">
+      <button type="button" class="btn ghost" data-close data-i18n="common.cancel">Cancel</button>
+      <button type="submit" class="btn primary" data-i18n="mc.save">Save key</button>
+    </div>
+    <button type="button" class="btn ghost small danger" id="mc-remove" data-act="mc-remove" hidden><svg class="ic" aria-hidden="true"><use href="#i-trash"></use></svg><span data-i18n="mc.remove">Remove key from this device</span></button>
   </form>
 </dialog>
 

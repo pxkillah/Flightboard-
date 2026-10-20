@@ -1,5 +1,5 @@
 // Static checks on the web page, so a change can't quietly break its security policy or its
-// promise to make no requests except to NHTSA.
+// promise to make no requests except to NHTSA, and to MarketCheck only with the visitor's key.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
@@ -9,11 +9,19 @@ const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8');
 const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)?.[1] ?? '';
 const directive = (name) => csp.split(';').map((d) => d.trim().split(/\s+/)).find(([n]) => n === name)?.slice(1) ?? null;
 
-test('the security policy only allows the page itself and NHTSA', () => {
+test('the security policy only allows the page itself, NHTSA and MarketCheck', () => {
   assert.deepEqual(directive('default-src'), ["'none'"]);
   assert.deepEqual(directive('script-src'), ["'self'"]);
-  assert.deepEqual(directive('connect-src'), ['https://vpic.nhtsa.dot.gov', 'https://api.nhtsa.gov']);
+  assert.deepEqual(directive('connect-src'), ['https://vpic.nhtsa.dot.gov', 'https://api.nhtsa.gov', 'https://api.marketcheck.com']);
   assert.match(html, /<meta name="referrer" content="no-referrer">/);
+});
+
+test('the MarketCheck key is typed into a masked field and never part of the page', () => {
+  const field = html.match(/<input[^>]*id="mc-key"[^>]*>/)?.[0] ?? '';
+  assert.match(field, /type="password"/);
+  assert.match(field, /autocomplete="off"/);
+  assert.doesNotMatch(field, /\svalue=/);
+  assert.doesNotMatch(html + app, /api_key/, 'only src/sources/marketcheck.js builds MarketCheck URLs');
 });
 
 test('nothing in the page needs inline script, which the policy blocks', () => {

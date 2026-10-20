@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`vehicle-report` (the repo name "Flightboard-" is unrelated to its contents) builds a Carfax-style VIN report from free public government APIs: NHTSA vPIC, NHTSA recalls, complaints and NCAP ratings, and Transport Canada recalls. It ships as a Node CLI and as a single static web page. It has **no dependencies, no build step and no API keys**, and needs Node ≥ 22 (ES modules, global `fetch`, `node:test`). CI tests Node 22 and 24.
+`vehicle-report` (the repo name "Flightboard-" is unrelated to its contents) builds a Carfax-style VIN report from free public government APIs: NHTSA vPIC, NHTSA recalls, complaints and NCAP ratings, and Transport Canada recalls. It ships as a Node CLI and as a single static web page. It has **no dependencies and no build step**, and needs no API keys (an optional MarketCheck key adds paid listing history; it's always the user's own key, never one in the repo or the published page). It needs Node ≥ 22 (ES modules, global `fetch`, `node:test`). CI tests Node 22 and 24.
 
 ## Commands
 
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm test                                   # all tests (node --test test/*.test.js), fully offline
 node --test test/recallMatch.test.js       # one test file
 node --test --test-name-pattern="<regex>" test/*.test.js   # tests matching a name
-node bin/vehicle-report.js <VIN> [--json] [--force] [--no-ratings] [--no-complaints]
+node bin/vehicle-report.js <VIN> [--json] [--force] [--no-ratings] [--no-complaints] [--no-history]
 node scripts/live-check.js                 # real NHTSA calls; runs daily in GitHub Actions and on PRs that change NHTSA code
 ```
 
@@ -20,18 +20,20 @@ There is no linter or formatter configured. `.github/workflows/ci.yml` runs `npm
 
 ## Architecture
 
-The same modules in `src/` run in both Node and the browser. The page is `index.html` (markup), `app.css` and `app.js`; `app.js` imports the `src/` modules directly as ES modules, so `src/` must stay browser-compatible: no Node built-ins, no bare package imports. `index.html` sets a Content-Security-Policy meta tag (GitHub Pages can't send headers): scripts only from the site itself, network only to the two NHTSA hosts. So no inline `<script>`, no `on*=` attributes and no third-party URLs; `test/page.test.js` checks this.
+The same modules in `src/` run in both Node and the browser. The page is `index.html` (markup), `app.css` and `app.js`; `app.js` imports the `src/` modules directly as ES modules, so `src/` must stay browser-compatible: no Node built-ins, no bare package imports. `index.html` sets a Content-Security-Policy meta tag (GitHub Pages can't send headers): scripts only from the site itself, network only to the two NHTSA hosts and `api.marketcheck.com`. So no inline `<script>`, no `on*=` attributes and no third-party URLs; `test/page.test.js` checks this.
 
 - `src/report.js`: `buildReport(vin, { fetch, include, force })` validates the VIN, decodes it with vPIC (which supplies year, make and model), then fetches each section in parallel. **Each section fails on its own**: an error goes into `report.errors[section]` and does not fail the whole report. `include.<section> === false` skips a section. `formatReport` renders the CLI text.
 - `src/sources/*.js`: one module per API. Each exposes pure `parse*` functions, which the tests exercise, alongside fetch wrappers.
+- `src/sources/marketcheck.js`: MarketCheck History by VIN (listing history). Paid, so `buildReport` runs the `listingHistory` section only when given `marketcheckKey`; the CLI reads it from `MARKETCHECK_API_KEY` or `~/.marketcheck_key`. The page calls `history` itself, only when the visitor taps Show listing history, with the key they saved in `localStorage` (`vin-report:v1:marketcheck`); it keeps each result as a `historyView` per VIN (`vin-report:v1:listings`) and checks it with `isHistoryView` when read back. The key is in the query string, so `history` scrubs it from errors, and the page never writes it into the DOM. A listing in a Canadian province is read as km and CAD (decision 12; the page, decision 13).
+- `src/dates.js`: `isoDate` turns each source's date order (NHTSA d/m/y, Transport Canada m/d/y) into YYYY-MM-DD; parsers return dates in that form.
 - `src/http.js`: `getJson` handles retries with backoff on 5xx/429/network errors, the timeout, and 404 → `null`. It omits `User-Agent` in the browser so requests don't trigger a CORS preflight.
 - `src/recallMatch.js`: recalls are looked up by year/make/model, not by VIN. `recallMismatch` compares each recall's text with the decoded vehicle (drive type, engine, fuel, roof height) and returns reasons it probably doesn't apply. Mismatched recalls are **flagged (`mismatch`), never dropped**, and a check only fires on an explicit contradiction.
 - `src/records.js`: the pure logic behind the web page's "My records" log (service, odometer and registration entries per VIN): validation, odometer-rollback and registration-expiry warnings, history text, and backup parse/merge. Storage is the caller's job: `app.js` keeps it in `localStorage` under `vin-report:v1` (the data carries its own `version`; `readStore` upgrades older data), and nothing is uploaded. Costs are integer cents in Canadian dollars. Each odometer reading stores `km` or `mi` in its own unit; checks compare via `kmOf`. Regions are province codes or `US-` plus a state code. The store is version 3 (`STORE_VERSION`); a change to saved shapes needs a new version and an upgrade in `readStore`.
 - `src/i18n.js`: every user-facing string, in English and French (`MESSAGES.en` / `MESSAGES.fr`), plus `t(lang, key, params)` and locale formatters for dates, numbers, distances and money. `src/regions.js` has province and state names. Add any new string to both languages: `test/i18n.test.js` checks key and placeholder parity, and `test/page.test.js` checks every `data-i18n` key the page uses exists. The `src/` functions that produce text take a `lang` option (default `'en'`).
-- `src/feedback.js`: `feedbackUrl` validates the feedback form and builds a pre-filled GitHub new-issue URL. The page opens that URL rather than posting feedback itself, which keeps the no-requests-except-NHTSA rule.
+- `src/feedback.js`: `feedbackUrl` validates the feedback form and builds a pre-filled GitHub new-issue URL. The page opens that URL rather than posting feedback itself, which keeps the page's network list to NHTSA and MarketCheck.
 - `src/vin.js`: VIN normalization and the check-digit calculation (49 CFR 565).
 
-The web page calls `buildReport` with `include: { recallsCanada: false }` and links to Transport Canada instead of fetching it. The README says the page makes no requests except to NHTSA, and the fonts in `fonts/` are self-hosted to keep it that way. Don't add CDN or third-party requests to the page. `manifest.webmanifest` and `icons/` make the page installable as a Home Screen app.
+The web page calls `buildReport` with `include: { recallsCanada: false }` and links to Transport Canada instead of fetching it. The README says the page makes no requests except to NHTSA, and to MarketCheck when a visitor with their own key asks; the fonts in `fonts/` are self-hosted to keep it that way. Don't add CDN or other third-party requests to the page. `manifest.webmanifest` and `icons/` make the page installable as a Home Screen app.
 
 ## Tests
 
@@ -48,7 +50,7 @@ The owner requires every app to follow `PRODUCTION_STANDARD.md`. This app's stat
 
 ## Project constraints (from README)
 
-- Use only legitimate public data. Don't scrape carfax.ca or get around its paywall. Accident, lien, ownership and odometer history are deliberately out of scope, and the README lists where that data legitimately lives.
+- Use only legitimate public data. Don't scrape carfax.ca or get around its paywall. Accident, lien, ownership and service history are deliberately out of scope (odometer readings appear only as advertised in MarketCheck listings, with the user's own key), and the README lists where that data legitimately lives.
 - Recall results show which campaigns apply to the model, not whether this particular car has been repaired. Keep the wording consistent with that.
 
 ## MCP

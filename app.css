@@ -298,6 +298,21 @@ p { margin: 0; }
 .del.confirm { padding: 0 .65rem; background: var(--crit-soft); color: var(--crit-ink); font-size: .8125rem; font-weight: 650; }
 .tools { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
 
+/* Listing history: the same timeline as My records, one entry per stay on the market. */
+.listing-intro { color: var(--ink-2); font-size: .9375rem; }
+.actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .875rem; }
+.panel-head + .status-row { margin-top: 0; }
+.flag-lines { display: grid; gap: .4rem; margin-top: .75rem; }
+.why.crit { background: var(--crit-soft); color: var(--crit-ink); }
+.why.crit .ic { color: var(--crit-ink); }
+.listing-error { margin-bottom: .875rem; }
+.ads .entry { grid-template-columns: 2.25rem minmax(0, 1fr); }
+.ad-new .node { border-color: var(--accent-soft); background: var(--accent-soft); color: var(--accent-ink); }
+.panel h2[tabindex]:focus:not(:focus-visible) { outline: none; }
+@media (prefers-reduced-motion: no-preference) { .spin { animation: spin 1.1s linear infinite; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.btn.danger { justify-self: start; color: var(--crit-ink); }
+
 /* Add-record sheet */
 dialog.sheet { width: min(34rem, calc(100% - 2rem)); max-height: 90vh; max-height: 90dvh; padding: 0; border: 0; border-radius: 1.25rem; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lg); overflow: auto; overscroll-behavior: contain; }
 dialog.sheet::backdrop { background: var(--backdrop); }
