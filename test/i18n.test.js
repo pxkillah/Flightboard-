@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MESSAGES, LANGS, t, pickLang, fmtDate, fmtMonthYear, fmtDistance, fmtMoney } from '../src/i18n.js';
+import { MESSAGES, LANGS, t, pickLang, fmtDate, fmtMonthYear, fmtDistance, fmtMoney, fmtPrice } from '../src/i18n.js';
 import { regionName, regionOptions, PROVINCES, STATES } from '../src/regions.js';
 import { recallMismatch } from '../src/recallMatch.js';
 import { feedbackUrl } from '../src/feedback.js';
@@ -40,6 +40,10 @@ test('dates, distances and money for each locale', () => {
   assert.equal(fmtDistance(75000, 'mi', 'en'), '75,000 mi');
   assert.equal(fmtDistance(75000, 'km', 'fr'), '75 000 km');
   assert.equal(fmtMoney(8999, 'en'), '$89.99');
+  assert.equal(fmtPrice(49315, 'CAD', 'en'), '$49,315', 'advertised prices in whole dollars');
+  assert.equal(fmtPrice(12000, 'USD', 'en'), 'US$12,000');
+  assert.equal(fmtPrice(49315, 'CAD', 'fr'), '49\u00a0315\u00a0$');
+  assert.equal(fmtPrice(12000, 'USD', 'fr'), '12\u00a0000\u00a0$\u00a0US');
   assert.equal(fmtMoney(123456, 'fr'), '1 234,56 $');
 });
 

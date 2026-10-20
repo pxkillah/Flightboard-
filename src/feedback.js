@@ -1,5 +1,6 @@
-// User feedback for the web page. The page makes no requests except to NHTSA, so feedback
-// isn't posted from here: it becomes a pre-filled GitHub issue the user reviews and submits.
+// User feedback for the web page. The page makes no requests except to NHTSA (and MarketCheck,
+// with a visitor's own key), so feedback isn't posted from here: it becomes a pre-filled GitHub
+// issue the user reviews and submits.
 import { normalizeVin } from './vin.js';
 import { t } from './i18n.js';
 

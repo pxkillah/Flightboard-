@@ -6,8 +6,14 @@ Changes people using VIN Report would notice. Newest first.
 
 - **Clear recall dates.** Recall dates from NHTSA and Transport Canada are shown the same
   way (YYYY-MM-DD on the command line), so 05/06/2020 can't be read two ways.
-- **Listing history (command line, optional).** With a MarketCheck API key, the report adds the
-  car's online sale listings: dates, dealer, asking prices and advertised mileage.
+- **Listing history (optional, your own MarketCheck key).** The report can add the car's
+  online sale listings: dates, dealer, asking prices and advertised mileage, with a warning
+  when an advertised reading went down.
+  - On the command line, from `MARKETCHECK_API_KEY` or `~/.marketcheck_key`.
+  - On the web page, in a new Listing history panel: add your key once (it stays in that
+    browser), then tap Show listing history. The result is kept on the device, so reopening
+    the report costs no calls, and your latest odometer reading in My records is checked
+    against the ads.
 - **En français.** The whole page is available in French (Canada), following your device's
   language, with a switch on the home page and in the footer.
 - **Miles or kilometres.** Each odometer reading can be in km or mi; the rollback warning

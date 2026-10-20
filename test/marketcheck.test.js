@@ -2,7 +2,7 @@
 // of listings, 50 per page, and a 422 for a page past the last one.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseHistory, summarizeHistory, history } from '../src/sources/marketcheck.js';
+import { parseHistory, summarizeHistory, history, historyView, isHistoryView, compareWithAds } from '../src/sources/marketcheck.js';
 import { buildReport, formatReport } from '../src/report.js';
 
 const KEY = 'test-key-0123456789abcdef';
@@ -134,4 +134,43 @@ test('the CLI text shows the listing history and what it covers', async () => {
   assert.match(text, /2021-12-17 {2}used, Pine Tree Ford Lincoln \(Woodbridge ON\) · 65,230 km/);
   assert.match(text, /as advertised, not verified/);
   assert.match(text, /Not included: accident, ownership/);
+});
+
+test('the page view keeps the stays, the advertised readings and any lower reading', () => {
+  const v = historyView(summarizeHistory(parseHistory([
+    ...sample,
+    listing('2022-05-01', '2022-05-20', { inventory_type: 'used', miles: 61000, seller_name: 'Somewhere Motors', city: 'Barrie' }),
+  ])));
+  assert.equal(v.count, 5);
+  assert.deepEqual([v.from, v.to], ['2020-01-19', '2022-05-20']);
+  assert.equal(v.stints.length, 3);
+  assert.deepEqual(v.readings, [{ date: '2021-12-17', value: 65230, unit: 'km' }, { date: '2022-05-01', value: 61000, unit: 'km' }]);
+  assert.deepEqual(v.issues, [{ reading: { date: '2022-05-01', value: 61000, unit: 'km' }, previous: { date: '2021-12-17', value: 65230, unit: 'km' } }]);
+  assert.ok(isHistoryView(v));
+  assert.ok(isHistoryView(JSON.parse(JSON.stringify(v))), 'survives saving as JSON');
+});
+
+test('an empty history is a valid view, and a damaged saved view is not', () => {
+  const empty = historyView(summarizeHistory(parseHistory([])));
+  assert.deepEqual(empty, { count: 0, from: null, to: null, stints: [], readings: [], issues: [] });
+  assert.ok(isHistoryView(empty));
+  const [stint] = historyView(summarizeHistory(parseHistory(sample))).stints;
+  for (const bad of [null, 'x', {}, { ...empty, count: -1 }, { ...empty, stints: [null] }, { ...empty, readings: [{ date: '2020-01-01', value: '5', unit: 'km' }] },
+    { ...empty, stints: [{ ...stint, currency: 'X<b>' }] }, { ...empty, stints: [{ ...stint, firstPrice: '49315' }] },
+    { ...empty, stints: [{ ...stint, odometer: { value: 1, unit: 'furlongs' } }] }, { ...empty, stints: [{ ...stint, seller: { html: 1 } }] }]) {
+    assert.equal(isHistoryView(bad), false, JSON.stringify(bad));
+  }
+  assert.ok(isHistoryView({ ...empty, count: 3, stints: [stint] }));
+});
+
+test('the owner\'s latest reading is checked against the advertised ones', () => {
+  const v = historyView(summarizeHistory(parseHistory(sample)));
+  const ad = { date: '2021-12-17', value: 65230, unit: 'km' };
+  assert.deepEqual(compareWithAds(v, { date: '2026-10-20', value: 120000, unit: 'km' }), { ok: true, ad });
+  assert.deepEqual(compareWithAds(v, { date: '2026-10-20', value: 58000, unit: 'km' }), { ok: false, ad }, 'lower now than in the 2021 ad');
+  assert.deepEqual(compareWithAds(v, { date: '2026-10-20', value: 64500, unit: 'km' }), { ok: true, ad }, 'within rounding of the ad');
+  assert.deepEqual(compareWithAds(v, { date: '2026-10-20', value: 37000, unit: 'mi' }), { ok: false, ad }, '37,000 mi is about 59,500 km');
+  assert.deepEqual(compareWithAds(v, { date: '2021-01-01', value: 90000, unit: 'km' }), { ok: false, ad }, 'a later ad lower than an earlier reading');
+  assert.equal(compareWithAds(v, null), null);
+  assert.equal(compareWithAds(historyView(summarizeHistory([])), { date: '2026-10-20', value: 1, unit: 'km' }), null);
 });
