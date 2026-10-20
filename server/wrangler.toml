@@ -1,0 +1,32 @@
+# Cloudflare Workers settings for the Car Report server. Secrets are never kept here: set them
+# with `npx wrangler secret put <NAME>` (see docs/server.md).
+name = "car-report-api"
+main = "worker.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+
+[vars]
+PRODUCT_ID = "car_report_full"
+APPLE_BUNDLE_ID = "com.pxkillah.carreport"
+GOOGLE_PACKAGE_NAME = "com.pxkillah.carreport"
+# The app's web view origins (iOS, Android). Only these get CORS headers.
+ALLOWED_ORIGINS = "capacitor://localhost,https://localhost"
+# TestFlight and App Review buy in Apple's sandbox.
+ALLOW_SANDBOX = "true"
+# Free listing counts: per caller and in total, per day. Each new count is a MarketCheck call.
+PREVIEW_PER_IP_DAY = "20"
+PREVIEW_PER_DAY = "500"
+# How many times one purchase can fetch its listing history again, per day.
+REPORT_FETCHES_PER_DAY = "5"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "car-report"
+# From `npx wrangler d1 create car-report`.
+database_id = "REPLACE_WITH_DATABASE_ID"
+
+[triggers]
+crons = ["17 4 * * *"]
+
+[observability]
+enabled = true
