@@ -27,6 +27,13 @@ the listings with the owner's MarketCheck key; setting it up is in `docs/server.
 address is set in `src/paid.js`, the app shows every report free. The website doesn't sell
 anything.
 
+## Website
+
+The public website is a landing page for the app, in English and French, with the privacy
+and support pages the stores require: `site/`, built by `node scripts/build-site.js` into
+`dist/site` and hosted on Cloudflare Pages on the owner's own domain. Buying the domain and
+setting up hosting: `docs/website.md`.
+
 ## Web page (works on a phone)
 
 `index.html` (with `app.js` and `app.css`) is the same report as a mobile-friendly web page. It runs entirely in the browser

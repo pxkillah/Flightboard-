@@ -15,9 +15,8 @@ The store text, privacy answers and screenshots are in `mobile/store/`.
 3. **Support email**: creport88@gmail.com (done 2026-10-16). It's in `src/feedback.js`
    (`SUPPORT_EMAIL`), `privacy.html` and `support.html`. Use the same address as the contact
    email in App Store Connect and Play Console.
-4. **Host the two pages**: upload `privacy.html` and `support.html` from the repo root to any
-   website with HTTPS. Their addresses go in both store listings. They are self-contained:
-   nothing else needs uploading.
+4. **Host the two pages**: the website (`docs/website.md`) publishes `privacy.html` and
+   `support.html` at your domain. Their addresses go in both store listings.
 5. Turn on two-step sign-in for the Apple ID and the Google account (both stores require it).
 6. **Selling reports** (decision 16). Before any purchase can happen:
    - App Store Connect → Business: sign the **Paid Apps Agreement** and fill in tax and bank

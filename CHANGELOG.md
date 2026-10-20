@@ -4,6 +4,9 @@ Changes people using VIN Report would notice. Newest first.
 
 ## Unreleased
 
+- **A website for Car Report**, in English and French: what the app does, what's free, what
+  the CA$11.99 full report includes, screenshots, questions and answers, and the privacy and
+  support pages, on its own domain.
 - **Full report in the app: CA$11.99 per VIN.** In the iPhone and Android app, the full report
   (sale listing history from MarketCheck, recalls, complaints and crash ratings) is a one-time
   purchase through the App Store or Google Play. Before buying you see the vehicle, how many

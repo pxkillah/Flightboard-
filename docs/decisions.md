@@ -192,3 +192,18 @@ report behind the payment, and a free count of listings before paying.
   bring-your-own-key listing history once the app sells them (decision 15 planned to take the
   website offline). Until `REPORT_API` is set in `src/paid.js`, the app gives every report
   away and `check-release` refuses to ship.
+
+## 17. A landing page on the owner's own domain, on Cloudflare (2026-10-20)
+
+Partly supersedes decision 2 for the website. The owner asked for a website and a domain, and
+chose a landing page for the app (with the privacy and support pages the stores require) over
+keeping the free VIN tool public, so the website no longer gives away what the app sells; and a
+.com domain. `site/` holds the page, built for English and French by `scripts/build-site.js`
+(the root stays dependency-free; the build only fills a template and copies files). It runs no
+scripts and loads nothing from other sites, so its Content-Security-Policy allows no scripts at
+all, and Cloudflare Pages sends it as a real header, with `frame-ancestors`, HSTS and
+`nosniff`, which GitHub Pages couldn't. Hosting and the domain are on Cloudflare, where the
+server already is: one account, at-cost domain pricing, free hosting that works with a private
+repository, automatic certificates, and `api.` on the same domain for the server. The
+screenshots were retaken from the current app with a made-up VIN and dealers. Buying the
+domain needs the owner's payment details, so it's a step for the owner (`docs/website.md`).

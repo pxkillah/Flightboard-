@@ -1,0 +1,98 @@
+/* The Car Report website: the app's petrol teal, road-sign headings and cool slate neutrals. */
+@font-face { font-family: "Barlow Semi Condensed"; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/barlow-semi-condensed-latin-700-normal.woff2) format("woff2"); }
+
+:root {
+  --bg: #edf2f3; --surface: #ffffff; --surface-2: #f4f7f8; --ink: #0e1a1f; --ink-2: #44555c; --ink-3: #5f7178;
+  --line: #dce4e7; --accent: #00768a; --accent-ink: #006070; --accent-soft: #dff0f2; --on-accent: #ffffff;
+  --good-ink: #0a6b14;
+  --shadow: 0 1px 2px rgba(14, 26, 31, .05), 0 12px 32px -16px rgba(14, 26, 31, .25);
+  --font-display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a1013; --surface: #121b1e; --surface-2: #172327; --ink: #e7eff1; --ink-2: #aebdc2; --ink-3: #8a9ca2;
+    --line: #233136; --accent: #2bb3c9; --accent-ink: #5cc8d9; --accent-soft: #10303a; --on-accent: #04232a;
+    --good-ink: #55d16a;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 12px 32px -16px rgba(0, 0, 0, .7);
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 5rem; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 1.0625rem/1.55 var(--font-body); -webkit-font-smoothing: antialiased; }
+img { max-width: 100%; height: auto; }
+a { color: var(--accent-ink); text-underline-offset: .18em; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; line-height: 1.05; text-wrap: balance; margin: 0; }
+p { margin: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.wrap { width: 100%; max-width: 68rem; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+.fine { font-size: .875rem; color: var(--ink-3); }
+.skip { position: absolute; left: -999px; top: 0; padding: .5rem 1rem; background: var(--surface); }
+.skip:focus { left: 1rem; z-index: 10; }
+
+/* Top bar */
+.bar { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+.bar-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; padding-block: .6rem; }
+.brand { display: flex; align-items: center; gap: .55rem; color: var(--ink); text-decoration: none; font: 700 1.35rem/1 var(--font-display); }
+.brand img { border-radius: 9px; }
+.bar nav { display: flex; flex-wrap: wrap; gap: .25rem 1.1rem; font-size: .9375rem; font-weight: 600; }
+.bar nav a { color: var(--ink-2); text-decoration: none; padding: .35rem 0; }
+.bar nav a:hover { color: var(--accent-ink); }
+@media (max-width: 479px) { .bar nav a:not(:last-child) { display: none; } }
+
+/* Hero */
+.hero { display: grid; gap: 2rem; align-items: center; padding-block: 2.5rem 3rem; }
+@media (min-width: 800px) { .hero { grid-template-columns: 1.15fr .85fr; padding-block: 4rem; } }
+.hero-text { display: grid; gap: 1.1rem; justify-items: start; }
+.hero h1 { font-size: clamp(2.6rem, 8vw, 4.25rem); letter-spacing: -.01em; max-width: 14ch; }
+.lede { font-size: 1.1875rem; color: var(--ink-2); max-width: 34rem; }
+.stores { display: flex; flex-wrap: wrap; gap: .6rem; }
+.store { display: inline-flex; align-items: center; min-height: 3rem; padding: 0 1.15rem; border-radius: .8rem; background: var(--ink); color: var(--bg); font-weight: 650; text-decoration: none; }
+.store img { display: block; height: 3rem; width: auto; }
+.store.badge { padding: 0; background: none; }
+.soon { padding: .7rem 1rem; border-radius: .8rem; background: var(--accent-soft); color: var(--accent-ink); font-weight: 650; }
+
+/* Phone frames */
+.phone { margin: 0; padding: .55rem; border-radius: 2.4rem; background: #10181b; box-shadow: var(--shadow); max-width: 19rem; justify-self: center; }
+.phone img { display: block; border-radius: 1.9rem; }
+.hero-phone { width: 100%; max-width: 20rem; }
+
+/* Sections */
+.band { background: var(--surface); border-block: 1px solid var(--line); padding-block: 3rem; }
+section h2 { font-size: clamp(2rem, 5vw, 2.75rem); margin-bottom: 1.5rem; }
+.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+.cards li { padding: 1.25rem; border-radius: 1rem; background: var(--surface-2); border: 1px solid var(--line); display: grid; gap: .5rem; align-content: start; }
+.cards h3 { font-size: 1.5rem; }
+.cards p { color: var(--ink-2); }
+
+.price { padding-block: 3.5rem; }
+.price-card { max-width: 40rem; margin-inline: auto; padding: 2rem 1.5rem; border-radius: 1.4rem; background: var(--surface); border: 2px solid var(--accent); box-shadow: var(--shadow); display: grid; gap: 1.1rem; }
+.price-card h2 { margin: 0; }
+.amount { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .6rem; }
+.amount b { font: 700 3rem/1 var(--font-display); color: var(--accent-ink); }
+.amount span { color: var(--ink-3); font-weight: 600; }
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: .7rem; }
+.checks li { position: relative; padding-left: 1.9rem; color: var(--ink-2); }
+.checks li::before { content: ""; position: absolute; left: .15rem; top: .3rem; width: .95rem; height: .5rem; border-left: 3px solid var(--good-ink); border-bottom: 3px solid var(--good-ink); transform: rotate(-45deg); }
+
+.shots { list-style: none; margin: 0; padding: 0; display: grid; gap: 2rem 1.25rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+.shots li { display: grid; gap: .9rem; justify-items: center; text-align: center; }
+.shots p { color: var(--ink-2); max-width: 17rem; font-size: .9375rem; }
+
+.two { display: grid; gap: 2.5rem; padding-block: 3.5rem; }
+@media (min-width: 800px) { .two { grid-template-columns: 1fr 1fr; } }
+.two h2 { font-size: 2rem; margin-bottom: .9rem; }
+.two p { color: var(--ink-2); }
+.two p + p { margin-top: .8rem; }
+
+.faq { max-width: 46rem; }
+.faq details { border-bottom: 1px solid var(--line); padding-block: .4rem; }
+.faq summary { cursor: pointer; padding-block: .7rem; font-weight: 650; font-size: 1.0625rem; }
+.faq details p { padding-bottom: .9rem; color: var(--ink-2); }
+
+.foot { display: grid; gap: .6rem; padding-block: 2.5rem 3rem; color: var(--ink-2); }
+.foot p { max-width: 48rem; }

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="{{lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#edf2f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a1013" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Car Report">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:locale" content="{{locale}}">
+{{headLinks}}
+<link rel="icon" href="{{root}}icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="{{root}}icons/apple-touch-icon.png">
+<link rel="preload" href="{{root}}fonts/barlow-semi-condensed-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{root}}site.css">
+</head>
+<body>
+<a class="skip" href="#main">{{skip}}</a>
+<header class="bar">
+  <div class="wrap bar-row">
+    <a class="brand" href="./"><img src="{{root}}icons/icon.svg" width="36" height="36" alt=""><span>Car Report</span></a>
+    <nav aria-label="Car Report">
+      <a href="#features">{{navFeatures}}</a>
+      <a href="#price">{{navPrice}}</a>
+      <a href="#faq">{{navFaq}}</a>
+      <a href="{{otherLangHref}}" hreflang="{{otherLangCode}}" lang="{{otherLangCode}}">{{otherLang}}</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero wrap">
+    <div class="hero-text">
+      <h1>{{heroTitle}}</h1>
+      <p class="lede">{{heroLede}}</p>
+      {{stores}}
+      <p class="fine">{{heroPrice}}</p>
+    </div>
+    <figure class="phone hero-phone"><img src="{{root}}img/{{code}}-listings.webp" width="780" height="1688" alt="{{heroAlt}}" fetchpriority="high"></figure>
+  </section>
+
+  <section class="band" id="features">
+    <div class="wrap">
+      <h2>{{freeTitle}}</h2>
+      <ul class="cards">
+        <li><h3>{{free1Title}}</h3><p>{{free1Text}}</p></li>
+        <li><h3>{{free2Title}}</h3><p>{{free2Text}}</p></li>
+        <li><h3>{{free3Title}}</h3><p>{{free3Text}}</p></li>
+        <li><h3>{{free4Title}}</h3><p>{{free4Text}}</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="wrap price" id="price">
+    <div class="price-card">
+      <h2>{{paidTitle}}</h2>
+      <p class="amount"><b>{{price}}</b> <span>{{paidPer}}</span></p>
+      <ul class="checks">
+        <li>{{paid1}}</li>
+        <li>{{paid2}}</li>
+        <li>{{paid3}}</li>
+        <li>{{paid4}}</li>
+        <li>{{paid5}}</li>
+      </ul>
+      <p class="fine">{{paidNote}}</p>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <h2>{{screensTitle}}</h2>
+      <ul class="shots">
+        <li><figure class="phone"><img src="{{root}}img/{{code}}-locked.webp" width="780" height="1688" alt="{{shot1Alt}}" loading="lazy"></figure><p>{{shot1}}</p></li>
+        <li><figure class="phone"><img src="{{root}}img/{{code}}-listings.webp" width="780" height="1688" alt="{{shot2Alt}}" loading="lazy"></figure><p>{{shot2}}</p></li>
+        <li><figure class="phone"><img src="{{root}}img/{{code}}-recalls.webp" width="780" height="1688" alt="{{shot3Alt}}" loading="lazy"></figure><p>{{shot3}}</p></li>
+        <li><figure class="phone"><img src="{{root}}img/{{code}}-records.webp" width="780" height="1688" alt="{{shot4Alt}}" loading="lazy"></figure><p>{{shot4}}</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="wrap two">
+    <div>
+      <h2>{{honestTitle}}</h2>
+      <p>{{honestText}}</p>
+    </div>
+    <div>
+      <h2>{{privacyTitle}}</h2>
+      <p>{{privacyText}}</p>
+      <p><a href="{{root}}privacy.html{{privacyAnchor}}">{{privacyLink}}</a></p>
+    </div>
+  </section>
+
+  <section class="band" id="faq">
+    <div class="wrap faq">
+      <h2>{{faqTitle}}</h2>
+      <details><summary>{{q1}}</summary><p>{{a1}}</p></details>
+      <details><summary>{{q2}}</summary><p>{{a2}}</p></details>
+      <details><summary>{{q3}}</summary><p>{{a3}}</p></details>
+      <details><summary>{{q4}}</summary><p>{{a4}}</p></details>
+      <details><summary>{{q5}}</summary><p>{{a5}}</p></details>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <p>{{contact}}: <a href="mailto:{{email}}">{{email}}</a></p>
+  <p><a href="{{root}}privacy.html{{privacyAnchor}}">{{footPrivacy}}</a> · <a href="{{root}}support.html{{supportAnchor}}">{{footSupport}}</a> · <a href="{{otherLangHref}}" hreflang="{{otherLangCode}}" lang="{{otherLangCode}}">{{otherLang}}</a></p>
+  <p class="fine">{{footLegal}}</p>
+  <p class="fine">© {{year}} pxkillah</p>
+</footer>
+</body>
+</html>
