@@ -1,8 +1,9 @@
 # Runbook
 
-What to do when something goes wrong with VIN Report. The app is a static site on GitHub
-Pages that calls NHTSA (and MarketCheck, with a visitor's own key) from the visitor's browser,
-so most incidents are NHTSA's or a bad deploy.
+What to do when something goes wrong with Car Report. The same page runs as the iOS and
+Android app (bundled in `mobile/`, released from the owner's Mac: `docs/app-release.md`) and,
+while the repository is public, as a static site on GitHub Pages. Either way it calls NHTSA (and, on
+the website, MarketCheck with a visitor's own key) directly from the phone or browser, so most incidents are NHTSA's or a bad release.
 
 ## The daily live check failed
 
@@ -24,7 +25,20 @@ instead of fetching it.
 GitHub disables scheduled workflows in a repository with no activity for 60 days. If the
 emails stop, check that the workflow is still enabled (Actions → Live NHTSA check).
 
-## A deploy broke the page
+## A store release broke the app
+
+Store releases can't be undone instantly, and people keep the version they installed.
+
+1. Stop the spread: in Play Console, **halt the staged rollout** (Release → Production);
+   in App Store Connect, **pause the phased release**. Release new versions at 10% first
+   for this reason.
+2. Fix forward: revert the bad change on GitHub (below), then `npm run sync`, raise the
+   version and build number, and upload a new build (`docs/app-release.md`).
+3. For a serious bug on iPhone, ask Apple for an **expedited review** when submitting.
+4. Keep the previous build installed through TestFlight or Play's internal testing, so you
+   can compare against it.
+
+## A deploy broke the website
 
 GitHub Pages publishes every commit on `main`. To roll back, revert the bad commit:
 
@@ -35,9 +49,11 @@ Pages redeploys in about a minute. Visitors may keep cached files for up to 10 m
 reload during that window can mix the new page with old cached files from `src/`, so keep
 changes to `src/` exports backward compatible for one release where you can.
 
-## A visitor lost their records
+## Someone lost their records
 
-Records live only in that browser. Safari can clear storage for sites that haven't been
+Records live only on that phone or browser. The app also keeps a copy in the phone's own
+settings store and restores it if the web view's storage is wiped (`native.js`); deleting the
+app deletes both. On the website, Safari can clear storage for sites that haven't been
 opened in a while. The only recovery is a backup file they saved (Restore on any vehicle
 page), which is why the page reminds them when there's no recent backup.
 
@@ -64,6 +80,8 @@ blocks it and every visitor sees "Couldn't reach MarketCheck": add the new addre
 `connect-src`, and to `test/page.test.js`. For a key saved on a lost device, see `SECURITY.md`.
 
 ## GitHub Pages or the account is unavailable
+
+The app doesn't depend on GitHub at all once installed. For the website:
 
 The site is plain static files with no build step. Any static host can serve a checkout of
 `main` (for example Cloudflare Pages or Netlify). Records are stored per site address, so

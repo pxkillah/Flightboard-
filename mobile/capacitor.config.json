@@ -1,0 +1,8 @@
+{
+  "appId": "com.pxkillah.carreport",
+  "appName": "Car Report",
+  "webDir": "www",
+  "backgroundColor": "#edf2f3",
+  "ios": { "contentInset": "never", "limitsNavigationsToAppBoundDomains": false },
+  "android": { "allowMixedContent": false }
+}
