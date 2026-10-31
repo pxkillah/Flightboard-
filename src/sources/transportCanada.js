@@ -25,10 +25,21 @@ const pick = (o, re) => {
   return k === undefined ? undefined : o[k];
 };
 
-export function parseRecalls(json) {
+// The model-name search matches by prefix, so "Transit" also returns TRANSIT CONNECT rows. When
+// some rows name the model exactly, rows for other models are dropped; when none do (TC may
+// spell the model differently from vPIC), every row is kept.
+const modelKey = (s) => String(s ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+export function parseRecalls(json, model) {
+  let rows = rowsToObjects(json);
+  if (model) {
+    const want = modelKey(model);
+    const exact = rows.filter((o) => modelKey(pick(o, /model/i)) === want);
+    if (exact.length) rows = exact;
+  }
   const seen = new Set();
   const out = [];
-  for (const o of rowsToObjects(json)) {
+  for (const o of rows) {
     const number = pick(o, /recall\s*number/i);
     if (!number || seen.has(number)) continue;
     seen.add(number);
@@ -57,7 +68,7 @@ const seg = (s) => encodeURIComponent(String(s).toLowerCase());
 
 export async function recalls({ make, model, year }, { withDetails = true, ...opts } = {}) {
   const url = `${BASE}/recall/make-name/${seg(make)}/model-name/${seg(model)}/year-range/${year}-${year}`;
-  const list = parseRecalls(await getJson(url, opts));
+  const list = parseRecalls(await getJson(url, opts), model);
   if (withDetails) {
     for (const r of list) {
       const s = parseSummary(await getJson(`${BASE}/recall-summary/recall-number/${encodeURIComponent(r.campaign)}`, opts));

@@ -4,6 +4,9 @@ Changes people using VIN Report would notice. Newest first.
 
 ## Unreleased
 
+- **No recalls for a different model (command line).** Transport Canada's search for a model
+  also returned longer model names, so a 2020 Ford Transit listed Transit Connect recalls.
+  Those are now left out.
 - **Clear recall dates.** Recall dates from NHTSA and Transport Canada are shown the same
   way (YYYY-MM-DD on the command line), so 05/06/2020 can't be read two ways.
 - **Listing history (optional, your own MarketCheck key).** The report can add the car's

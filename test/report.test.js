@@ -91,6 +91,17 @@ test('TC parser tolerates missing values', () => {
   assert.equal(parseTc({ ResultSet: [tcRow('2020333', '7/20/2020 12:00:00 AM', 'Air bags')] })[0].date, '2020-07-20', "TC's month/day/year becomes YYYY-MM-DD");
 });
 
+test('TC recalls for a longer model name are dropped', () => {
+  const row = (n, model) => [...tcRow(n, '7/20/2020 12:00:00 AM', 'Air bags'), { Name: 'Model name', Value: { Literal: model } }];
+  // Searching "Transit" also returns TRANSIT CONNECT; a recall listed for both is kept.
+  const json = { ResultSet: [row('2020333', 'TRANSIT'), row('2022151', 'TRANSIT CONNECT'), row('2025360', 'TRANSIT CONNECT'), row('2025360', 'TRANSIT')] };
+  assert.deepEqual(parseTc(json, 'Transit').map((r) => r.campaign), ['2020333', '2025360']);
+  assert.equal(parseTc(json).length, 3, 'no model given: nothing dropped');
+  // No row names the model exactly (spelled differently): keep everything rather than nothing.
+  assert.equal(parseTc({ ResultSet: [row('2021001', 'F-150 LIGHTNING'), row('2021002', 'F150 RAPTOR')] }, 'F-150 Hybrid').length, 2);
+  assert.deepEqual(parseTc({ ResultSet: [row('2021001', 'F150')] }, 'F-150').map((r) => r.campaign), ['2021001'], 'punctuation is ignored');
+});
+
 test('a changed NHTSA format is an error, never "no recalls"', async () => {
   // NHTSA renames its list: the report must not claim there are no recalls or complaints.
   const { fetch } = stubFetch([
