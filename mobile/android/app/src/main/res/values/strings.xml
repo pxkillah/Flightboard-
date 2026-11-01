@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Car Report</string>
+    <string name="title_activity_main">Car Report</string>
+    <string name="package_name">com.pxkillah.carreport</string>
+    <string name="custom_url_scheme">com.pxkillah.carreport</string>
+</resources>

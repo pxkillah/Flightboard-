@@ -1,4 +1,5 @@
-# The app has no npm dependencies; this keeps the GitHub Actions above up to date.
+# The web page has no npm dependencies; the phone app in mobile/ does (Capacitor and its
+# plugins). This keeps those and the GitHub Actions up to date.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -9,3 +10,10 @@ updates:
     directory: /
     schedule:
       interval: monthly
+  - package-ecosystem: npm
+    directory: /mobile
+    schedule:
+      interval: monthly
+    groups:
+      capacitor:
+        patterns: ['@capacitor/*', '@capacitor-mlkit/*']

@@ -108,6 +108,8 @@ p { margin: 0; }
 .count .ic { width: .875rem; height: .875rem; stroke-width: 2.4; }
 .search .btn { min-height: 2.25rem; padding: 0 .85rem; border-radius: .625rem; }
 @media (max-width: 479px) { .search .go { width: 2.5rem; padding: 0; } .go-label { display: none; } }
+.search .scan { width: 2.5rem; padding: 0; }
+.search .scan .ic { width: 1.35rem; height: 1.35rem; }
 @media (max-width: 359px) { .count { display: none; } }
 .search-msg { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .4rem .6rem; padding: 0 0 .7rem; font-size: .875rem; color: var(--crit-ink); }
 .search-msg .ic { width: 1.05rem; height: 1.05rem; margin-top: .1rem; }

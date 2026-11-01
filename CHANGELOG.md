@@ -4,6 +4,15 @@ Changes people using VIN Report would notice. Newest first.
 
 ## Unreleased
 
+- **Car Report for iPhone and Android.** The page is now also a phone app, with:
+  - a scan button that reads the VIN barcode on the door frame or windshield;
+  - backups and spreadsheets that open the share sheet (Files, AirDrop, email…);
+  - saved records that survive iOS clearing the app's web storage.
+  - after your third saved record, the app may ask you to rate it (once, then at most every 4 months).
+- The app is now called **Car Report**.
+- Send feedback opens an email instead of a GitHub issue.
+- A privacy policy page, in English and French, linked from the footer.
+
 - **Clear recall dates.** Recall dates from NHTSA and Transport Canada are shown the same
   way (YYYY-MM-DD on the command line), so 05/06/2020 can't be read two ways.
 - **Listing history (optional, your own MarketCheck key).** The report can add the car's
@@ -14,6 +23,7 @@ Changes people using VIN Report would notice. Newest first.
     browser), then tap Show listing history. The result is kept on the device, so reopening
     the report costs no calls, and your latest odometer reading in My records is checked
     against the ads.
+
 - **En français.** The whole page is available in French (Canada), following your device's
   language, with a switch on the home page and in the footer.
 - **Miles or kilometres.** Each odometer reading can be in km or mi; the rollback warning

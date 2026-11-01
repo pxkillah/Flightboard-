@@ -39,3 +39,20 @@ export function validateVin(input) {
   }
   return { valid: errors.length === 0, vin, errors };
 }
+
+// Picks the VIN out of what a barcode scan read. Door-frame and windshield labels encode it
+// in Code 39 or Data Matrix, sometimes with a leading "I" on imported vehicles (18
+// characters), and some labels hold several values. A candidate whose check digit matches
+// wins; otherwise the first 17-character one is returned so the person can see and fix it.
+// Returns null when nothing looks like a VIN.
+export function vinFromScan(texts) {
+  const found = [];
+  for (const text of [].concat(texts ?? [])) {
+    for (const token of String(text ?? '').split(/[^0-9A-Za-z\uFF10-\uFF5A]+/)) {
+      const t = normalizeVin(token);
+      const vin = t.length === 18 && t[0] === 'I' ? t.slice(1) : t;
+      if (/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)) found.push(vin);
+    }
+  }
+  return found.find((v) => checkDigit(v) === v[8]) ?? found[0] ?? null;
+}

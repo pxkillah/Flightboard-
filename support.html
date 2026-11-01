@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Car Report support</title>
+<style>
+  :root { color-scheme: light dark; --ink: #13262b; --ink-2: #3d5157; --bg: #edf2f3; --card: #fff; --line: #d3dde0; --accent: #00687a; }
+  @media (prefers-color-scheme: dark) { :root { --ink: #e6eef0; --ink-2: #a9babe; --bg: #0f1a1d; --card: #172427; --line: #2b3b3f; --accent: #6fd0e0; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 42rem; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 3rem max(16px, env(safe-area-inset-left)); }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 4px 20px 16px; margin-top: 16px; }
+  h1 { font-size: 1.6rem; line-height: 1.2; margin: 1rem 0 .25rem; }
+  h2 { font-size: 1.1rem; margin: 1.25rem 0 .25rem; }
+  p { color: var(--ink-2); }
+  a { color: var(--accent); }
+  .top { display: flex; justify-content: flex-end; padding-top: 8px; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <nav class="top"><a href="#fr" lang="fr">Français</a></nav>
+
+  <section lang="en">
+    <h1>Car Report support</h1>
+    <p>Car Report checks any vehicle by its VIN: recalls, owner complaints and crash ratings from NHTSA, plus your own service, odometer and registration log. Email <a href="mailto:creport88@gmail.com">creport88@gmail.com</a>, or use Send feedback at the bottom of the app.</p>
+
+    <h2>Where do I find the VIN?</h2>
+    <p>On a label in the driver's door frame, at the bottom of the windshield on the driver's side, and on your registration and insurance card. Tap the scan button to read the barcode on the door label.</p>
+
+    <h2>Does a recall in the list apply to my car?</h2>
+    <p>NHTSA lists recalls by year, make and model, so some cover versions you don't have. Car Report flags the ones that probably don't apply, and says why. A dealer can tell you whether a recall applies to your VIN and whether it was done.</p>
+
+    <h2>Where are my records kept?</h2>
+    <p>Only on your phone. Use Save backup in My records now and then, and keep the file in Files, iCloud Drive or Google Drive. Restore a backup reads it back, on the same phone or a new one.</p>
+
+    <h2>How do I delete my data?</h2>
+    <p>Remove a vehicle from its page, or tap "Erase all Car Report data on this device" at the bottom of the app. Deleting the app also deletes everything. See the <a href="privacy.html">privacy policy</a>.</p>
+  </section>
+
+  <section lang="fr" id="fr">
+    <h1>Aide pour Car Report</h1>
+    <p>Car Report vérifie n'importe quel véhicule par son NIV&nbsp;: rappels, plaintes de propriétaires et cotes de sécurité de la NHTSA, et votre propre carnet d'entretien, d'odomètre et d'immatriculation. Écrivez à <a href="mailto:creport88@gmail.com">creport88@gmail.com</a>, ou utilisez «&nbsp;Envoyer un commentaire&nbsp;» au bas de l'application.</p>
+
+    <h2>Où trouver le NIV?</h2>
+    <p>Sur une étiquette dans le cadre de la portière du conducteur, au bas du pare-brise du côté conducteur, et sur votre certificat d'immatriculation et votre attestation d'assurance. Touchez le bouton de lecture pour lire le code-barres de l'étiquette de la portière.</p>
+
+    <h2>Un rappel de la liste s'applique-t-il à mon véhicule?</h2>
+    <p>La NHTSA classe les rappels par année, marque et modèle, alors certains visent des versions que vous n'avez pas. Car Report signale ceux qui ne s'appliquent probablement pas, et pourquoi. Un concessionnaire peut vous dire si un rappel s'applique à votre NIV et s'il a été effectué.</p>
+
+    <h2>Où sont gardées mes entrées?</h2>
+    <p>Seulement sur votre téléphone. Utilisez «&nbsp;Sauvegarder&nbsp;» dans Mon carnet de temps en temps, et gardez le fichier dans Fichiers, iCloud Drive ou Google Drive. «&nbsp;Restaurer une sauvegarde&nbsp;» le relit, sur le même téléphone ou un nouveau.</p>
+
+    <h2>Comment effacer mes données?</h2>
+    <p>Retirez un véhicule à partir de sa page, ou touchez «&nbsp;Effacer toutes les données de Car Report sur cet appareil&nbsp;» au bas de l'application. Supprimer l'application efface aussi tout. Voir la <a href="privacy.html">politique de confidentialité</a>.</p>
+  </section>
+</main>
+</body>
+</html>
