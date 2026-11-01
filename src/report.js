@@ -2,14 +2,17 @@ import { validateVin } from './vin.js';
 import { decodeVin } from './sources/vpic.js';
 import * as nhtsa from './sources/nhtsa.js';
 import * as tc from './sources/transportCanada.js';
+import * as mc from './sources/marketcheck.js';
 import { recallMismatch } from './recallMatch.js';
 import { errorKind } from './http.js';
+import { fmtNumber } from './i18n.js';
 
 // Builds a vehicle report from public sources. Each section fails independently so
 // one slow or down API doesn't sink the whole report. errors[section] holds the technical
 // message and errorKinds[section] what kind of failure it was (see errorKind in http.js);
 // a VIN that decodes without a make, model and year is kind 'unrecognized'.
-export async function buildReport(input, { fetch, include = {}, force = false, lang = 'en' } = {}) {
+// listingHistory (MarketCheck) is paid, so it runs only when a marketcheckKey is passed.
+export async function buildReport(input, { fetch, include = {}, force = false, lang = 'en', marketcheckKey } = {}) {
   const opts = fetch ? { fetch } : {};
   const check = validateVin(input);
   const report = { vin: check.vin, vinCheck: check, generatedAt: new Date().toISOString(), errors: {}, errorKinds: {} };
@@ -35,6 +38,7 @@ export async function buildReport(input, { fetch, include = {}, force = false, l
     complaints: () => nhtsa.complaints(ymm, opts),
     safetyRatings: () => nhtsa.safetyRatings(ymm, opts),
   };
+  if (marketcheckKey) sections.listingHistory = async () => mc.summarizeHistory(await mc.history(check.vin, { apiKey: marketcheckKey, ...opts }));
   await Promise.all(Object.entries(sections).map(async ([name, fn]) => {
     if (include[name] === false) return;
     try {
@@ -86,9 +90,37 @@ export function formatReport(r) {
     L.push('', 'Crash ratings (NHTSA NCAP, out of 5):');
     for (const s of r.safetyRatings) L.push(`  ${s.description}: overall ${s.overall}, front ${s.frontCrash}, side ${s.sideCrash}, rollover ${s.rollover}`);
   }
+  listingBlock(L, r.listingHistory);
   for (const [k, e] of Object.entries(r.errors)) L.push('', `(${k} unavailable: ${e})`);
-  L.push('', 'Not included: accident, odometer, ownership, lien and service history. See README.');
+  const triedListings = r.listingHistory || r.errors.listingHistory;
+  L.push('', `Not included: accident, ${triedListings ? '' : 'odometer, '}ownership, lien and service history. See README.`);
   // API text goes straight to a terminal, so drop control characters that could retitle the
   // window, move the cursor or write the clipboard. Tabs and newlines stay.
   return L.join('\n').replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g, '');
+}
+
+const n = (x) => fmtNumber(x, 'en');
+const money = (x, currency) => `$${n(x)} ${currency}`;
+const reading = (o) => `${n(o.value)} ${o.unit}`;
+
+function listingBlock(L, h) {
+  if (!h) return;
+  const dates = h.listings.flatMap((l) => [l.firstSeen, l.lastSeen]).filter(Boolean).sort();
+  if (!h.listings.length) {
+    L.push('', 'Listing history (MarketCheck): no online sale listings found.');
+  } else {
+    L.push('', `Listing history (MarketCheck): ${h.listings.length} listing${h.listings.length === 1 ? '' : 's'}, ${dates[0]} to ${dates.at(-1)}`);
+    for (const s of h.stints) {
+      const when = s.from === s.to ? s.from : `${s.from} to ${s.to}`;
+      const where = [s.city, s.region].filter(Boolean).join(' ');
+      const price = s.firstPrice === null ? '' : s.firstPrice === s.lastPrice ? money(s.firstPrice, s.currency) : `${money(s.firstPrice, s.currency)} -> ${money(s.lastPrice, s.currency)}`;
+      const parts = [`${s.condition ?? 'listed'}, ${s.seller ?? s.sellerType ?? 'unknown seller'}${where ? ` (${where})` : ''}`, price, s.odometer && reading(s.odometer), s.listings > 1 && `${s.listings} listings`];
+      L.push(`  ${when}  ${parts.filter(Boolean).join(' · ')}`);
+    }
+    for (const { listing, previous } of h.odometerIssues) {
+      L.push(`  ! Advertised odometer ${reading(listing.odometer)} on ${listing.firstSeen} is lower than ${reading(previous.odometer)} on ${previous.firstSeen}: an ad typo, or a rollback.`);
+    }
+    L.push('  Prices and odometer readings are as advertised, not verified. Listings in a province are read as km and CAD.');
+  }
+  L.push('  Covers dealer websites (US since 2015, Canada since 2018) and Canadian private sellers since 2023, not classified sites such as Kijiji or AutoTrader.ca.');
 }

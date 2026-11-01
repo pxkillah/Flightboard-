@@ -1,6 +1,7 @@
 // NHTSA recalls, complaints and NCAP safety ratings. Free, no key.
 // https://www.nhtsa.gov/nhtsa-datasets-and-apis
 import { getJson, FormatError } from '../http.js';
+import { isoDate } from '../dates.js';
 
 const BASE = 'https://api.nhtsa.gov';
 const q = (o) => new URLSearchParams(o).toString();
@@ -26,7 +27,7 @@ export function parseRecalls(json) {
   return list.map((r) => ({
     source: 'NHTSA',
     campaign: r.NHTSACampaignNumber,
-    date: r.ReportReceivedDate,
+    date: isoDate(r.ReportReceivedDate, 'dmy'),
     component: r.Component,
     summary: r.Summary,
     consequence: r.Consequence,

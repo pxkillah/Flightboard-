@@ -46,7 +46,7 @@ Send feedback opens a pre-filled GitHub issue rather than posting from the page,
 decision 3. Posting needs a GitHub account and is public; the VIN is included only when the
 person ticks the box. Security reports go through private reporting instead (`SECURITY.md`).
 
-*Replaced by decision 13.*
+*Replaced by decision 15.*
 
 ## 7. A failed or changed answer is never shown as "none" (2026-10-15)
 
@@ -92,7 +92,39 @@ marked `lang="en"`, since translating it would mean sending it to a translation 
 couldn't be confirmed from here. The French was written by the AI that wrote the code and
 still needs a fluent speaker's review (UX-09).
 
-## 12. The phone app is the same page, bundled with Capacitor (2026-10-15)
+## 12. Paid listing history in the CLI only, with the user's own key (2026-10-20)
+
+Partly supersedes decision 1 for the CLI. The owner chose to add MarketCheck's History by VIN:
+the online sale listings recorded for a VIN, with asking prices and advertised mileage. It's
+paid and keyed, so it runs only in the CLI and only when `MARKETCHECK_API_KEY` or
+`~/.marketcheck_key` holds a key; the page is unchanged and still contacts nothing but NHTSA
+(decision 3), because a key in a public page's URLs could be copied and billed. MarketCheck
+names the field `miles` everywhere, but Canadian dealers advertise km, so a listing in a
+province is read as km and CAD; the report says readings are as advertised. MarketCheck's
+US-only NMVTIS title reports ($0.49 each) and its lack of accident and service data were
+reviewed and left out. Accident, lien, ownership and service history stay out of scope.
+
+## 13. Listing history on the page, with the visitor's own key (2026-10-20)
+
+Partly supersedes decisions 3 and 12. The owner asked to see the listing history in the app.
+A visitor adds their own MarketCheck key in a masked field; it's saved in that browser's
+`localStorage` under the store's prefix (so Erase all removes it, and backups never include
+it) and sent only to `api.marketcheck.com`, which the Content-Security-Policy now allows next to
+NHTSA. MarketCheck answers cross-origin requests from any site (checked from the owner's laptop
+on 2026-10-20), and the request sends no custom headers, so there's no preflight. The page asks
+MarketCheck only when the visitor taps Show listing history or Check again, because every call
+is billed to their key; the answer is kept per VIN (the 20 most recent) and shown from the
+device after that. No key is ever in the published page, which was decision 12's reason for
+leaving the page out. What remains: anyone who can use that browser, and any page published
+under pxkillah.github.io (every GitHub Pages site there shares the browser storage), could read
+the key. The key sheet says the first and that removing the key here doesn't cancel it;
+`SECURITY.md` covers both and how to cancel a key.
+The panel also checks the owner's latest odometer reading in My records against the advertised
+ones. Considered instead: a small proxy holding the owner's key (for example a Cloudflare
+Worker), which keeps the key off devices but needs an account, a service to run, and a way to
+stop strangers spending the owner's calls.
+
+## 14. The phone app is the same page, bundled with Capacitor (2026-10-15)
 
 The owner wants Car Report in the App Store and Google Play. `mobile/` wraps the page in
 native iOS and Android projects with Capacitor, and `scripts/copy-web.js` copies the page
@@ -114,7 +146,7 @@ To be more than a website in a wrapper (Apple guideline 4.2), and to work proper
 Costs: Capacitor and its plugins need updating every year to keep up with Apple's and
 Google's requirements, and store releases can't be rolled back instantly (`docs/runbook.md`).
 
-## 13. Feedback by email; the repository goes private (2026-10-15)
+## 15. Feedback by email; the repository goes private (2026-10-15)
 
 The owner chose to make the repository private. GitHub issues on a private repository are
 closed to the public, and GitHub Pages on the free plan stops serving it, so:
@@ -125,4 +157,3 @@ closed to the public, and GitHub Pages on the free plan stops serving it, so:
 - The privacy policy and support pages (`privacy.html`, `support.html`) are self-contained so
   the owner can host them anywhere; the privacy policy is also inside the app.
 - Security reports go to the same address (`SECURITY.md`).
-

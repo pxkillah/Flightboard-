@@ -47,6 +47,8 @@ test('builds a full report from all sources', async () => {
   assert.equal(r.vehicle.make, 'HONDA');
   assert.equal(r.vehicle.year, 2003);
   assert.equal(r.recallsUS[0].parkIt, true);
+  assert.equal(r.recallsUS[0].date, '2003-02-01', "NHTSA's day/month/year becomes YYYY-MM-DD");
+  assert.equal(r.recallsCanada[0].date, '2003-01-15');
   assert.equal(r.recallsCanada.length, 1, 'duplicate TC rows collapse');
   assert.equal(r.recallsCanada[0].summary, 'Driver airbag inflator.');
   assert.equal(r.complaints.total, 2);
@@ -86,6 +88,7 @@ test('complaint components keep names that contain a comma', () => {
 test('TC parser tolerates missing values', () => {
   assert.deepEqual(rowsToObjects({ ResultSet: [[{ Name: 'Recall number', Value: null }]] }), [{ 'Recall number': null }]);
   assert.deepEqual(parseTc(null), []);
+  assert.equal(parseTc({ ResultSet: [tcRow('2020333', '7/20/2020 12:00:00 AM', 'Air bags')] })[0].date, '2020-07-20', "TC's month/day/year becomes YYYY-MM-DD");
 });
 
 test('a changed NHTSA format is an error, never "no recalls"', async () => {

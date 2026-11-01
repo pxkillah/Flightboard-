@@ -11,11 +11,14 @@ Google Play, the `main` branch and the current CLI are supported.
 
 ## What's in scope
 
-- The page, as the iOS and Android app and as the website: it keeps records on the device
-  (`localStorage`, plus a copy in the phone's settings store in the app) and should contact
-  nothing but NHTSA (enforced by a Content-Security-Policy in `index.html`).
+- The page, as the iOS and Android app and as the website: it keeps records (and a person's
+  MarketCheck key, if they add one) on the device (`localStorage`, plus a copy of the records
+  in the phone's settings store in the app), and should contact nothing but NHTSA, plus
+  MarketCheck when someone with a key asks for a listing history (enforced by a
+  Content-Security-Policy in `index.html`).
 - The native projects in `mobile/` and the Capacitor plugins they use.
-- The CLI (`bin/vehicle-report.js`), which prints data from NHTSA and Transport Canada.
+- The CLI (`bin/vehicle-report.js`), which prints data from NHTSA and Transport Canada, and
+  from MarketCheck when a key is set.
 - This repository and its GitHub Actions workflows.
 
 ## If a device with access is lost or stolen
@@ -23,7 +26,7 @@ Google Play, the `main` branch and the current CLI are supported.
 Anyone holding a signed-in device can push to `main`, and GitHub Pages publishes `main` to
 every visitor within about a minute. Anyone holding the Mac with Xcode and the Android upload
 key, and signed in to App Store Connect or Play Console, can ship an app update. A pushed
-script could read people's saved records. From another device, as soon as possible:
+script could read people's saved records and MarketCheck keys. From another device, as soon as possible:
 
 1. On GitHub: sign out of all sessions, change the password, and confirm two-factor
    authentication is still on with your own method.
@@ -46,3 +49,13 @@ pushes, so anything a stolen login publishes leaves a pull request behind and ca
 reverted. GitHub enforces rulesets on private repositories only on paid plans (Pro or
 above), so once this repository is private on the free plan the ruleset stops applying. See
 `docs/production-readiness.md` (SEC-11).
+
+## MarketCheck keys
+
+A MarketCheck key saved on the page sits in that browser's storage. Anyone who uses that
+browser, and any page published under pxkillah.github.io (all GitHub Pages sites there share
+the storage), could read it, so publish only trusted pages there. In the phone app the key is in the
+app's own storage, which other apps and sites can't read. If a device with a saved key
+is lost, or the key was ever pasted into a chat, an issue or a shared file, delete the key on
+your MarketCheck dashboard (<https://developers.marketcheck.com>) and create a new one. Removing
+the key from the page, or Erase all, only removes it from that browser; it doesn't cancel it.

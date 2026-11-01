@@ -1,5 +1,6 @@
-// User feedback. The app makes no requests except to NHTSA, so feedback isn't posted from
-// here: it becomes a pre-filled email that the person reviews and sends from their own mail app.
+// User feedback. The page makes no requests except to NHTSA (and MarketCheck, with a
+// person's own key), so feedback isn't posted from here: it becomes a pre-filled email that
+// the person reviews and sends from their own mail app.
 import { normalizeVin } from './vin.js';
 import { t } from './i18n.js';
 

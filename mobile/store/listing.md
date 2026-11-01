@@ -35,7 +35,7 @@ Type the 17-character VIN or scan the barcode on the driver's door frame, and Ca
 
 Keep your own logbook too: oil changes and repairs, odometer readings in km or miles, and registration renewals for any Canadian province or US state. Car Report charts your mileage, warns if the odometer ever goes backwards, shows when a registration is about to expire, and lets you share the history with a buyer or mechanic, or export it as a spreadsheet.
 
-Private by design: your records stay on your phone. There are no accounts, ads or tracking. The only thing that leaves your phone is the VIN you check, which goes to NHTSA.
+Private by design: your records stay on your phone. There are no accounts, ads or tracking. The VIN you check goes to NHTSA. Optional: add your own MarketCheck key to see the car's past online sale listings (asking prices and advertised mileage); only then does the VIN go to MarketCheck, billed to your account.
 
 In English and French.
 
@@ -55,7 +55,7 @@ Tapez le NIV de 17 caractères ou lisez le code-barres dans le cadre de la porti
 
 Tenez aussi votre propre carnet : vidanges et réparations, relevés d'odomètre en km ou en milles, et renouvellements d'immatriculation dans toute province canadienne ou tout État américain. Car Report trace votre kilométrage, vous avertit si l'odomètre recule, indique quand l'immatriculation arrive à échéance, et vous permet de partager l'historique avec un acheteur ou un mécanicien, ou de l'exporter en tableur.
 
-Confidentiel par conception : vos entrées restent sur votre téléphone. Aucun compte, aucune publicité, aucun pistage. La seule chose qui quitte votre téléphone est le NIV vérifié, envoyé à la NHTSA.
+Confidentiel par conception : vos entrées restent sur votre téléphone. Aucun compte, aucune publicité, aucun pistage. Le NIV vérifié est envoyé à la NHTSA. Facultatif : ajoutez votre propre clé MarketCheck pour voir les anciennes annonces de vente du véhicule (prix demandés et kilométrage annoncé); seulement alors le NIV est envoyé à MarketCheck, aux frais de votre compte.
 
 En français et en anglais.
 
@@ -65,7 +65,9 @@ Source : les données de rappels, de plaintes et de cotes de sécurité viennent
 
 - Data collection: **No, we do not collect data from this app.** The VIN goes straight from
   the phone to NHTSA when the person asks for a report; it never reaches the developer.
-  Feedback is an email the person sends from their own mail app.
+  If the person adds their own MarketCheck key and asks for a listing history, the VIN and key
+  go from the phone to MarketCheck; that's also never the developer. Feedback is an email the
+  person sends from their own mail app.
 - Tracking: none. The privacy manifest (`ios/App/App/PrivacyInfo.xcprivacy`) says the same.
 - Export compliance: uses only standard HTTPS, so it's exempt
   (`ITSAppUsesNonExemptEncryption` is set to NO in Info.plist).
@@ -82,6 +84,9 @@ Source : les données de rappels, de plaintes et de cotes de sécurité viennent
 > - Report: VIN details, recalls (ones that probably don't apply to this vehicle are flagged
 >   with the reason), owner complaints and crash ratings, from NHTSA's public APIs. If a VIN
 >   fails its check digit, the app explains why and offers "Look up anyway" (some imports skip it).
+> - Listing history (optional): the person enters their own MarketCheck API key (a paid third-party
+>   service, not sold through the app) and taps "Show listing history" to see the VIN's past online
+>   sale listings. Without a key the panel explains how to get one; all other features work without it.
 > - My records: service, odometer and registration entries, stored on the device only. Save
 >   backup and Export CSV open the share sheet; Restore reads a backup file; Copy history copies text.
 > - After the third saved record, the app may show Apple's standard rating prompt (SKStoreReviewController).
@@ -107,7 +112,8 @@ The screenshots in `screenshots/` already follow this.
   description, with the "not affiliated" disclaimer Google requires).
 - Data safety:
   - Does the app collect or share user data? **No.** Looking up a VIN sends it to NHTSA at the
-    person's request, which Google counts as a user-initiated transfer, not sharing.
+    person's request, and to MarketCheck only when they add their own key and ask for a listing
+    history. Google counts both as user-initiated transfers, not sharing.
   - Is data encrypted in transit? Yes (HTTPS only).
   - Can users delete their data? Yes: in the app ("Erase all Car Report data on this device"),
     or by uninstalling.
