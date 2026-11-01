@@ -1,5 +1,6 @@
 // Static checks on the web page, so a change can't quietly break its security policy or its
-// promise to make no requests except to NHTSA, and to MarketCheck only with the visitor's key.
+// promise to make no requests except to NHTSA, to MarketCheck only with the visitor's key, and
+// to the owner's GlobalVIN Worker only once it's set up.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
@@ -9,10 +10,14 @@ const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8');
 const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)?.[1] ?? '';
 const directive = (name) => csp.split(';').map((d) => d.trim().split(/\s+/)).find(([n]) => n === name)?.slice(1) ?? null;
 
-test('the security policy only allows the page itself, NHTSA and MarketCheck', () => {
+test('the security policy only allows the page itself, NHTSA, MarketCheck and the GlobalVIN Worker once set', async () => {
+  const { WORKER_URL } = await import('../src/sources/globalvin.js');
+  const worker = WORKER_URL ? [new URL(WORKER_URL).origin] : [];
+  if (WORKER_URL) assert.match(WORKER_URL, /^https:\/\//, 'the Worker URL must be https');
   assert.deepEqual(directive('default-src'), ["'none'"]);
   assert.deepEqual(directive('script-src'), ["'self'"]);
-  assert.deepEqual(directive('connect-src'), ['https://vpic.nhtsa.dot.gov', 'https://api.nhtsa.gov', 'https://api.marketcheck.com']);
+  assert.deepEqual(directive('connect-src'), ['https://vpic.nhtsa.dot.gov', 'https://api.nhtsa.gov', 'https://api.marketcheck.com', ...worker],
+    'connect-src must list exactly NHTSA, MarketCheck and the WORKER_URL origin (if set)');
   assert.match(html, /<meta name="referrer" content="no-referrer">/);
 });
 
@@ -22,6 +27,8 @@ test('the MarketCheck key is typed into a masked field and never part of the pag
   assert.match(field, /autocomplete="off"/);
   assert.doesNotMatch(field, /\svalue=/);
   assert.doesNotMatch(html + app, /api_key/, 'only src/sources/marketcheck.js builds MarketCheck URLs');
+  const gv = readFileSync(new URL('../src/sources/globalvin.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(gv, /api_key/, 'the GlobalVIN key lives only in the Worker');
 });
 
 test('nothing in the page needs inline script, which the policy blocks', () => {

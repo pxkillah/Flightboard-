@@ -47,8 +47,9 @@ hidden until that address is set.
 visitor adds their own MarketCheck key (see below). The key is saved only in that browser.
 
 It installs as a Home Screen app (Safari: Share → Add to Home Screen), using
-`manifest.webmanifest` and the icons in `icons/`. The page makes no requests except to NHTSA, and
-to MarketCheck when a visitor with a key asks for a listing history: the fonts are self-hosted in
+`manifest.webmanifest` and the icons in `icons/`. The page makes no requests except to NHTSA,
+to MarketCheck when a visitor with a key asks for a listing history, and, once it's set up, to
+the owner's GlobalVIN Worker when a visitor asks for a GlobalVIN lookup: the fonts are self-hosted in
 `fonts/` (Barlow Semi Condensed and B612 Mono, both under the SIL Open Font License, with license
 files alongside).
 
@@ -99,6 +100,64 @@ Recalls are fetched by year/make/model, not by the individual VIN. Each recall's
 apply to the model, not whether this particular car has been repaired. For a per-VIN open-recall
 check, use the manufacturer's recall lookup or Transport Canada's.
 
+### GlobalVIN lookup (optional, the owner's key, through a Cloudflare Worker)
+
+The page can add a **GlobalVIN** panel that looks the VIN up in GlobalVIN when a visitor taps
+**Look up on GlobalVIN**. GlobalVIN's API (`POST /v1/api/vin`) takes its key in the JSON body,
+so the page never calls GlobalVIN directly: it POSTs `{ "vin": "..." }` to a small Cloudflare
+Worker in `workers/globalvin/`, which holds the key as a secret, adds it, and forwards the
+request. The key is never in the page, the apps or this repo. The panel stays hidden until
+`WORKER_URL` is set (decision 17).
+
+The Worker exposes only `POST /v1/api/vin`. It trims and uppercases the VIN and answers 400 if
+it isn't 17 VIN characters (no I, O or Q) or the body isn't JSON, 405 for other methods, 404 for
+other paths, 429 over the per-IP rate limit, 500 if `GLOBALVIN_BASE_URL` or the key is missing,
+and 502 if GlobalVIN can't be reached. Otherwise it passes GlobalVIN's status and body through,
+caching successful answers per VIN (`X-Cache: HIT` or `MISS`). Settings, in
+`workers/globalvin/wrangler.toml`:
+
+| Setting | What it is |
+|---|---|
+| `GLOBALVIN_BASE_URL` | GlobalVIN's API host, https, no trailing slash. **TODO: not filled in yet.** |
+| `GLOBALVIN_API_KEY` | Secret, set with `wrangler secret put`; never in a file. |
+| `ALLOWED_ORIGINS` | Comma-separated origins a browser may read answers from; `*` (the default) allows any. |
+| `CACHE_TTL_SECONDS` | How long a VIN's answer is cached; default 86400 (a day). |
+| `RATE_LIMITER` | Per-IP limit, 20 lookups a minute; remove the `[[ratelimits]]` block to turn it off. |
+
+**Set up** (needs a Cloudflare account; `npx` fetches Wrangler, nothing is added to the repo):
+
+1. In `workers/globalvin/wrangler.toml`, set `GLOBALVIN_BASE_URL` to GlobalVIN's API host.
+2. Add the key as a secret (it prompts for it):
+   ```bash
+   cd workers/globalvin && npx wrangler secret put GLOBALVIN_API_KEY
+   ```
+3. Deploy, and note the `https://….workers.dev` address it prints:
+   ```bash
+   cd workers/globalvin && npx wrangler deploy
+   ```
+4. Lock down `ALLOWED_ORIGINS` to where the page runs: the website's origin (for example
+   `https://pxkillah.github.io`), plus `capacitor://localhost` and `https://localhost` for the
+   iOS and Android apps. Redeploy. CORS only stops other websites reading answers in a browser;
+   the rate limit and the cache are what protect the GlobalVIN bill from scripts.
+5. Point the page at it: set `WORKER_URL` in `src/sources/globalvin.js` to the Worker's
+   address, and add the same origin to `connect-src` in `index.html`'s Content-Security-Policy.
+   `npm test` fails if the two don't match.
+
+**Local dev:** copy `workers/globalvin/.dev.vars.example` to `.dev.vars` (git-ignored), put
+the key in it, and run `npx wrangler dev` in `workers/globalvin/`. It serves on
+`http://localhost:8787`:
+
+```bash
+curl -s -X POST http://localhost:8787/v1/api/vin -H 'content-type: application/json' -d '{"vin":"1HGCM82633A004352"}'
+```
+
+To try the page against it, temporarily set `WORKER_URL` to `http://localhost:8787` and add
+that to `connect-src`; don't commit that. The Worker's tests run offline with `npm test`.
+
+GlobalVIN's response format isn't documented here, so the panel shows its answer as labelled
+fields as GlobalVIN sends them. Once the format is known, a parser like the other sources' can
+replace that.
+
 ## What it does not include (and where that data actually lives)
 
 A Carfax Canada report's core value comes from private data feeds: insurance claims, police
@@ -123,7 +182,9 @@ project does not do that.
 - **What leaves your device:** the VIN goes to NHTSA's VIN decoder (vPIC), and the decoded
   year, make and model go to NHTSA's recall, complaint and crash-rating services. If you've
   added a MarketCheck key, the VIN and your key go to MarketCheck when you ask for a listing
-  history (the command line asks on every lookup; the page only when you tap the button). GitHub
+  history (the command line asks on every lookup; the page only when you tap the button). Once
+  the GlobalVIN lookup is set up, tapping Look up on GlobalVIN sends the VIN to the owner's
+  Cloudflare Worker, which asks GlobalVIN and caches the answer for that VIN for a day. GitHub
   Pages, which hosts the page, sees each page request, including `?vin=` when you open a
   report link.
 - **What stays on your device:** your records, the VINs you check, your MarketCheck key and

@@ -3,6 +3,7 @@ import { validateVin, normalizeVin, vinFromScan } from './src/vin.js';
 import { feedbackUrl, SUPPORT_EMAIL } from './src/feedback.js';
 import { recallMismatch } from './src/recallMatch.js';
 import { makeRecord, sortRecords, summarize, historyText, parseBackup, mergeRecords, recordsCsv, readingOf, convert, fmtReading, localDate, readStore, backupText, pruneLookups, MAX_BACKUP_BYTES } from './src/records.js';
+import { lookupVin, globalVinFields, WORKER_URL } from './src/sources/globalvin.js';
 import { history as mcHistory, summarizeHistory, historyView, isHistoryView, compareWithAds } from './src/sources/marketcheck.js';
 import { HttpError, errorKind } from './src/http.js';
 import { t as translate, pickLang, fmtNumber, fmtDate, fmtMonthYear, fmtDistance, fmtMoney, fmtPrice, LOCALE } from './src/i18n.js';
@@ -394,8 +395,10 @@ function renderReport() {
   }
   $('#report').innerHTML = identity(r) + alertBanner(r) + '<div class="tiles" id="tiles"></div>'
     + recallsPanel(r) + '<section class="panel" id="records"></section><section class="panel" id="listings"></section>'
+    + (WORKER_URL ? '<section class="panel" id="globalvin"></section>' : '')
     + complaintsPanel(r) + ratingsPanel(r);
   renderRecords();
+  renderGlobalVin();
 }
 
 function identity(r) {
@@ -783,6 +786,60 @@ function hidePoint() {
   if (chart) chart.idx = -1;
 }
 
+// ---------- GlobalVIN ----------
+// More vehicle details from GlobalVIN, through the owner's Worker (decision 17), which holds
+// the GlobalVIN key. Hidden until WORKER_URL is set. Each lookup uses one of the owner's
+// GlobalVIN calls, so nothing is sent until the visitor taps the button; the Worker caches
+// answers per VIN, and the page keeps only the latest answer in memory.
+let gv = { vin: null, loading: false, problem: null, reason: '', fields: null };
+const GV_PROBLEMS = ['quota', 'unreachable', 'timeout', 'unavailable', 'format'];
+
+function gvProblem(e) {
+  if (e instanceof HttpError && e.status === 429) return 'quota';
+  if (e instanceof HttpError && e.status >= 400 && e.status < 500) return 'refused';
+  return errorKind(e);
+}
+
+function renderGlobalVin() {
+  const el = $('#globalvin');
+  if (!el || !current.vin) return;
+  const { loading, problem, reason, fields } = gv.vin === current.vin ? gv : {};
+  const msg = problem === 'refused' ? t('gv.refused', { reason }) : problem && t(`gv.${GV_PROBLEMS.includes(problem) ? problem : 'other'}`);
+  const body = loading ? `<p class="empty-line info">${icon('refresh', 'spin')}<span>${esc(t('gv.loading'))}</span></p>`
+    : fields?.length ? `<dl class="specs">${fields.map(([k, x]) => `<div><dt dir="auto">${esc(k)}</dt><dd dir="auto">${esc(x)}</dd></div>`).join('')}</dl>`
+    : fields ? `<p class="empty-line info">${icon('info')}<span>${esc(t('gv.none'))}</span></p>`
+    : `<p class="listing-intro">${esc(t('gv.intro'))}</p>`;
+  // Redrawing removes the button that was tapped; the heading keeps the place.
+  const focused = el.contains(document.activeElement);
+  el.setAttribute('aria-busy', String(Boolean(loading)));
+  el.innerHTML = `<header class="panel-head"><span class="panel-icon">${icon('search')}</span><h2 tabindex="-1">${esc(t('gv.title'))}</h2></header>
+    ${msg ? `<p class="why crit listing-error">${icon('alert')}<span>${esc(msg)}</span></p>` : ''}
+    ${body}
+    ${loading ? '' : `<div class="${fields ? 'tools' : 'actions'}"><button type="button" class="btn ${fields ? 'secondary' : 'primary'} small" data-act="globalvin">${icon(fields ? 'refresh' : 'search')}${esc(t(fields ? 'gv.again' : 'gv.show'))}</button></div>`}
+    ${fields?.length ? `<p class="fine gap-top">${esc(t('gv.note'))}</p>` : ''}`;
+  if (focused) el.querySelector('h2').focus();
+}
+
+async function loadGlobalVin() {
+  const vin = current.vin;
+  if (!vin || !WORKER_URL || (gv.vin === vin && gv.loading)) return;
+  const kept = gv.vin === vin ? gv.fields : null;
+  gv = { vin, loading: true, problem: null, reason: '', fields: kept };
+  renderGlobalVin();
+  let fields = kept;
+  let problem = null;
+  let reason = '';
+  try {
+    fields = globalVinFields(await lookupVin(vin));
+  } catch (e) {
+    problem = gvProblem(e);
+    reason = String(e?.message ?? '').slice(0, 200);
+  }
+  if (gv.vin !== vin) return;
+  gv = { vin, loading: false, problem, reason, fields };
+  if (current.vin === vin) renderGlobalVin();
+}
+
 // ---------- Listing history ----------
 // Ads for this VIN from MarketCheck (decision 13). Nothing goes to MarketCheck until the
 // visitor taps the button, and then only with the key they saved on this device.
@@ -1087,7 +1144,8 @@ function eraseAll() {
   } catch { /* storage blocked: nothing saved */ }
   erasures++;
   listing = { vin: null, loading: false, problem: null };
-  if (current.vin) renderRecords(); else renderHome();
+  gv = { vin: null, loading: false, problem: null, reason: '', fields: null };
+  if (current.vin) { renderRecords(); renderGlobalVin(); } else renderHome();
   toast(t('toast.erased'));
 }
 async function restoreBackup(file) {
@@ -1178,6 +1236,7 @@ document.addEventListener('click', (e) => {
   else if (el.matches('[data-act="forget"]')) forgetVehicle();
   else if (el.matches('[data-act="erase"]')) eraseAll();
   else if (el.matches('[data-act="listings"]')) loadListings();
+  else if (el.matches('[data-act="globalvin"]')) loadGlobalVin();
   else if (el.matches('[data-act="mc-key"]')) openKeySheet();
   else if (el.matches('[data-act="mc-remove"]')) removeKey();
 });
