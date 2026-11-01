@@ -4,6 +4,9 @@ Changes people using VIN Report would notice. Newest first.
 
 ## Unreleased
 
+- **New look.** The app reads like an inspection report: warm paper and ink, numbered
+  sections, a stamped VIN plate, a ruled summary strip, black buttons and one orange signal
+  colour, in light and dark. New flat app icon.
 - **Car Report for iPhone and Android.** The page is now also a phone app, with:
   - a scan button that reads the VIN barcode on the door frame or windshield;
   - backups and spreadsheets that open the share sheet (Files, AirDrop, email…);

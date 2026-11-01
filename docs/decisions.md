@@ -157,3 +157,16 @@ closed to the public, and GitHub Pages on the free plan stops serving it, so:
 - The privacy policy and support pages (`privacy.html`, `support.html`) are self-contained so
   the owner can host them anywhere; the privacy policy is also inside the app.
 - Security reports go to the same address (`SECURITY.md`).
+
+## 16. The look of an inspection report (2026-11-01)
+
+The owner asked for a design that doesn't look AI-generated. The earlier look (a teal accent,
+every section in a white rounded card with a soft shadow, an icon in a pastel square beside
+every heading, pill chips, a gradient icon) is the default of generated interfaces. The page
+now borrows from paper vehicle documents: warm paper and ink, sections numbered and divided by
+heavy rules instead of cards, condensed uppercase headings, B612 Mono for the VIN and every
+number, square tags, black buttons, and one safety-orange signal colour for what matters (the
+section numbers, the odometer needle, the chart, links). The odometer drum and VIN plate stay
+because they're specific to cars. All colours are tokens at the top of `app.css`, with a dark
+set; contrast is checked with axe in both themes.
+
