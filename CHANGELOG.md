@@ -4,6 +4,9 @@ Changes people using VIN Report would notice. Newest first.
 
 ## Unreleased
 
+- **GlobalVIN lookup (once set up).** A GlobalVIN panel in the report looks the VIN up in
+  GlobalVIN when you tap Look up on GlobalVIN. It goes through Car Report's own server, so no
+  key is needed on your device.
 - **New look.** The app reads like an inspection report: warm paper and ink, numbered
   sections, a stamped VIN plate, a ruled summary strip, black buttons and one orange signal
   colour, in light and dark. New flat app icon.

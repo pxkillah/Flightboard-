@@ -79,6 +79,16 @@ If MarketCheck moves its API to another address, the Content-Security-Policy in 
 blocks it and every visitor sees "Couldn't reach MarketCheck": add the new address to
 `connect-src`, and to `test/page.test.js`. For a key saved on a lost device, see `SECURITY.md`.
 
+## GlobalVIN lookups aren't working
+
+The page shows what the Worker said. 500 "not configured": `GLOBALVIN_BASE_URL` or the
+`GLOBALVIN_API_KEY` secret is missing (`npx wrangler secret list` in `workers/globalvin/`).
+502: GlobalVIN is down or the base URL is wrong. 401 or 403 passed through: GlobalVIN refused
+the key; rotate it with `npx wrangler secret put GLOBALVIN_API_KEY`. 429: the per-IP limit, or
+someone hammering the Worker; check Cloudflare's Workers metrics. To stop all lookups at once,
+set `WORKER_URL` to `''` and merge (the panel disappears), or `npx wrangler delete`. A bad
+Worker deploy rolls back with `npx wrangler rollback`.
+
 ## GitHub Pages or the account is unavailable
 
 The app doesn't depend on GitHub at all once installed. For the website:

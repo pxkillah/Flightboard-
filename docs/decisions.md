@@ -170,3 +170,20 @@ section numbers, the odometer needle, the chart, links). The odometer drum and V
 because they're specific to cars. All colours are tokens at the top of `app.css`, with a dark
 set; contrast is checked with axe in both themes.
 
+## 17. GlobalVIN lookups through a Cloudflare Worker (2026-11-01)
+
+Partly supersedes decision 3. The owner asked for GlobalVIN vehicle lookups with the owner's
+own GlobalVIN key. GlobalVIN's API takes the key in the JSON body of `POST /v1/api/vin`, so it
+can't be given to visitors the way MarketCheck's is (decision 13): every visitor would be
+spending the owner's account. The key lives instead in a Cloudflare Worker
+(`workers/globalvin/`) as a secret; the page POSTs `{ vin }` to the Worker, which adds the key
+and forwards to GlobalVIN. This is the proxy decision 13 considered, and its costs are now
+paid: a Cloudflare account, a service to deploy (`npx wrangler deploy`), and a way to stop
+strangers spending the owner's calls. For the last, the Worker validates the VIN before
+calling GlobalVIN, caches each VIN's successful answer for a day, and rate-limits per IP;
+`ALLOWED_ORIGINS` keeps other websites from reading answers but can't stop scripts. The page
+calls the Worker only when a visitor taps Look up on GlobalVIN, and the panel is hidden until
+`WORKER_URL` is set in `src/sources/globalvin.js`, whose origin must also be in the page's
+Content-Security-Policy (`test/page.test.js`). The Worker is in this repo but has no npm
+dependencies, so the root stays dependency-free. GlobalVIN's response format wasn't available,
+so the panel shows the answer as escaped, labelled text rather than parsed fields.

@@ -1,0 +1,5 @@
+# Copy to .dev.vars (git-ignored) for `npx wrangler dev`. Never commit the real key.
+GLOBALVIN_API_KEY=your-globalvin-api-key
+# Optional overrides for local runs:
+# GLOBALVIN_BASE_URL=https://api.globalvin.example
+# ALLOWED_ORIGINS=http://localhost:8000
