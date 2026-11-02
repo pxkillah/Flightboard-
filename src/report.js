@@ -12,9 +12,10 @@ import { fmtNumber } from './i18n.js';
 // one slow or down API doesn't sink the whole report. errors[section] holds the technical
 // message and errorKinds[section] what kind of failure it was (see errorKind in http.js);
 // a VIN that decodes without a make, model and year is kind 'unrecognized'.
-// listingHistory (MarketCheck) and globalDecode (GlobalVIN) are paid, so each runs only when
-// its key is passed.
-export async function buildReport(input, { fetch, include = {}, force = false, lang = 'en', marketcheckKey, globalvinKey } = {}) {
+// listingHistory (MarketCheck), globalDecode and carfax (both GlobalVIN) are paid, so each runs
+// only when its key is passed. carfax runs only for a North American vehicle, meaning one vPIC
+// recognizes; for any other VIN it's skipped (report.skipped.carfax) and nothing is billed.
+export async function buildReport(input, { fetch, include = {}, force = false, lang = 'en', marketcheckKey, globalvinKey, carfaxKey } = {}) {
   const opts = fetch ? { fetch } : {};
   const check = validateVin(input);
   const report = { vin: check.vin, vinCheck: check, generatedAt: new Date().toISOString(), errors: {}, errorKinds: {} };
@@ -42,6 +43,7 @@ export async function buildReport(input, { fetch, include = {}, force = false, l
   if (!v?.make || !v?.model || !v?.year) {
     report.errors.vehicle ??= 'decoder did not return make/model/year';
     report.errorKinds.vehicle ??= 'unrecognized';
+    if (carfaxKey) report.skipped = { carfax: 'not a North American vehicle (NHTSA did not recognize the VIN)' };
     await global;
     return report;
   }
@@ -54,6 +56,7 @@ export async function buildReport(input, { fetch, include = {}, force = false, l
     safetyRatings: () => nhtsa.safetyRatings(ymm, opts),
   };
   if (marketcheckKey) sections.listingHistory = async () => mc.summarizeHistory(await mc.history(check.vin, { apiKey: marketcheckKey, ...opts }));
+  if (carfaxKey) sections.carfax = () => gv.carfaxReport(check.vin, { apiKey: carfaxKey, ...opts });
   await Promise.all([global, ...Object.entries(sections).map(([name, fn]) => run(name, fn))]);
   for (const key of ['recallsUS', 'recallsCanada']) {
     report[key]?.forEach((r) => { r.mismatch = recallMismatch(r, v, { lang }); });
@@ -99,9 +102,10 @@ export function formatReport(r) {
   }
   listingBlock(L, r.listingHistory);
   globalBlock(L, r);
+  carfaxBlock(L, r);
   for (const [k, e] of Object.entries(r.errors)) L.push('', `(${k} unavailable: ${e})`);
   const triedListings = r.listingHistory || r.errors.listingHistory;
-  L.push('', `Not included: accident, ${triedListings ? '' : 'odometer, '}ownership, lien and service history. See README.`);
+  if (!r.carfax) L.push('', `Not included: accident, ${triedListings ? '' : 'odometer, '}ownership, lien and service history. See README.`);
   // API text goes straight to a terminal, so drop control characters that could retitle the
   // window, move the cursor or write the clipboard. Tabs and newlines stay.
   return L.join('\n').replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g, '');
@@ -151,4 +155,11 @@ function globalBlock(L, r) {
     if (body.length) L.push(`    ${body.join(' · ')}`);
   }
   L.push(`  From GlobalVIN's factory catalogues (strongest for cars built or sold in China).${g.cached ? ' Decoded before, so not billed again.' : ''}`);
+}
+
+function carfaxBlock(L, r) {
+  if (r.skipped?.carfax) L.push('', `Carfax: skipped, ${r.skipped.carfax}. Nothing was charged.`);
+  if (!r.carfax) return;
+  L.push('', `Carfax report (via GlobalVIN): ${r.carfax.file ? `saved to ${r.carfax.file}` : 'ready'}${r.carfax.freeRepeat ? ' (ordered before, so not charged again)' : ''}`);
+  L.push('  Your own copy, for your use; don\'t publish or share it.');
 }

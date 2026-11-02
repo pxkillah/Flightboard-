@@ -2,7 +2,7 @@
 // test VIN, 2026-11-01), trimmed to the fields the parser reads.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseDecode, decode } from '../src/sources/globalvin.js';
+import { parseDecode, decode, parseJob, carfaxReport, reportPdf } from '../src/sources/globalvin.js';
 import { buildReport, formatReport } from '../src/report.js';
 
 const KEY = 'gvk_live_test0123456789abcdef';
@@ -95,4 +95,63 @@ test('no match is said plainly', async () => {
   const r = await buildReport(VIN, { globalvinKey: KEY, include: only, fetch: async (url) => (/vpic/.test(url) ? noVpic : json({}, 404)) });
   assert.equal(r.globalDecode, null);
   assert.match(formatReport(r), /Factory model data \(GlobalVIN\): no match for this VIN\./);
+});
+
+// Carfax via GlobalVIN: an order queues a job, polling the job ends with the report id.
+const NA_VIN = '1HGCM82633A004352';
+const honda = json({ Results: [{ Make: 'HONDA', Model: 'Accord', ModelYear: '2003', ErrorCode: '0' }] });
+const queued = { success: true, message: 'Report queued', data: { jobId: 'job1', status: 'pending', reused: false } };
+const finished = { success: true, message: 'Your report is ready!', data: { jobId: 'job1', status: 'completed', isComplete: true, isFailed: false,
+  statusMessage: 'Your report is ready!', result: { success: true, vin: NA_VIN, reportType: 'carfax', reportId: 'GV-TEST01', freeRepeat: false } } };
+
+test('a Carfax order is polled until the report is ready, and the PDF link is built from its id', async () => {
+  const calls = [];
+  const fetch = async (url, init) => {
+    calls.push({ url, key: init?.headers?.['x-api-key'] });
+    if (url.endsWith(`/usa/report/carfax/${NA_VIN}`)) return json(queued);
+    return json(calls.length < 3 ? queued : finished);
+  };
+  const c = await carfaxReport(NA_VIN, { apiKey: KEY, fetch, pollMs: 1 });
+  assert.equal(c.reportId, 'GV-TEST01');
+  assert.equal(c.pdfUrl, 'https://globalvin.co/backend/api/vhrs/GV-TEST01/pdf');
+  assert.equal(calls.filter((x) => x.url.includes('/usa/report/carfax/')).length, 1, 'ordered once');
+  assert.ok(calls.slice(1).every((x) => x.url.endsWith('/jobs/status/job1')));
+  assert.ok(calls.every((x) => x.key === KEY && !x.url.includes(KEY)));
+});
+
+test('a failed or stuck Carfax job is an error that says so', async () => {
+  const failed = { success: true, data: { jobId: 'job1', status: 'failed', isFailed: true, statusMessage: 'No records' } };
+  await assert.rejects(carfaxReport(NA_VIN, { apiKey: KEY, pollMs: 1, fetch: async (url) => json(url.includes('/jobs/') ? failed : queued) }), /Carfax report failed \(No records\)/);
+  await assert.rejects(carfaxReport(NA_VIN, { apiKey: KEY, pollMs: 1, maxWaitMs: 5, fetch: async () => json(queued) }), /wasn't ready after/);
+  assert.throws(() => parseJob({ success: true, data: {} }), /expected format/);
+  assert.throws(() => parseJob({ success: false, message: 'Insufficient credits. Required: $3, Available: $0.9' }), /Insufficient credits/);
+});
+
+test('Carfax runs only for a vehicle NHTSA recognizes; any other VIN is skipped and never ordered', async () => {
+  const calls = [];
+  const r = await buildReport(VIN, { carfaxKey: KEY, include: only, fetch: async (url) => { calls.push(url); return noVpic; } });
+  assert.ok(calls.every((u) => !u.includes('globalvin')));
+  assert.match(r.skipped.carfax, /not a North American vehicle/);
+  assert.match(formatReport(r), /Carfax: skipped, not a North American vehicle .*Nothing was charged\./);
+});
+
+test('a North American VIN gets the Carfax section, and the key stays out of errors', async () => {
+  const ok = await buildReport(NA_VIN, { carfaxKey: KEY, include: only,
+    fetch: async (url) => (/vpic/.test(url) ? honda : json(finished)) }); // a repeat order can come back finished
+  ok.carfax.file = '/Users/me/Downloads/Carfax 1HGCM82633A004352 2026-11-01.pdf';
+  const text = formatReport(ok);
+  assert.match(text, /Carfax report \(via GlobalVIN\): saved to \/Users\/me\/Downloads\/Carfax 1HGCM82633A004352 2026-11-01\.pdf/);
+  assert.match(text, /don't publish or share it/);
+  assert.doesNotMatch(text, /Not included: accident/);
+  const refused = await buildReport(NA_VIN, { carfaxKey: KEY, include: only,
+    fetch: async (url) => (/vpic/.test(url) ? honda : json({ success: false, message: `Invalid or expired API key ${KEY}` }, 401)) });
+  assert.equal(refused.errorKinds.carfax, 'refused');
+  assert.doesNotMatch(JSON.stringify(refused) + formatReport(refused), new RegExp(KEY));
+});
+
+test('the report file must be a PDF', async () => {
+  const file = (bytes, status = 200) => async () => ({ ok: status < 400, status, arrayBuffer: async () => new TextEncoder().encode(bytes).buffer });
+  assert.equal((await reportPdf('https://x/pdf', { fetch: file('%PDF-1.7 ...') })).length, 12);
+  await assert.rejects(reportPdf('https://x/pdf', { fetch: file('<html>') }), /isn't a PDF/);
+  await assert.rejects(reportPdf('https://x/pdf', { fetch: file('', 404) }), /HTTP 404/);
 });

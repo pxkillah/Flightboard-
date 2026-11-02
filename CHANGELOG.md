@@ -16,6 +16,9 @@ Changes people using VIN Report would notice. Newest first.
 - Send feedback opens an email instead of a GitHub issue.
 - A privacy policy page, in English and French, linked from the footer.
 
+- **Carfax reports for North American vehicles (command line, optional, your own GlobalVIN
+  key).** Add `--carfax` to order a Carfax report ($3.00) and save the PDF in your Downloads
+  folder. Only for vehicles NHTSA recognizes; any other VIN is skipped and not charged.
 - **Factory model data from GlobalVIN (command line, optional, your own key).** Add
   `--globalvin` to get the engine, power, transmission, drive, body, seats and production dates
   from GlobalVIN's factory catalogues, which also cover cars built for China that NHTSA can't

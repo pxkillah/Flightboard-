@@ -4,11 +4,11 @@
 // https://www.globalvin.co/dashboard/supplier/api-docs (behind the account login)
 // Paid and keyed ($2.00 a VIN; a VIN the account has decoded before is free), so it runs only on
 // the command line, only when asked (--globalvin), with the user's own key. GlobalVIN refuses
-// browser calls (its CORS preflight returns 403), so the page doesn't offer it. GlobalVIN also
-// resells Carfax and AutoCheck reports; this module calls only VIN Decode (README: Scope).
+// browser calls (its CORS preflight returns 403), so the page doesn't offer it. Of GlobalVIN's
+// resold history reports, only Carfax is used, below.
 import { getJson, FormatError } from '../http.js';
 
-const URL_DECODE = 'https://globalvin.co/backend/api/vin/lookup/decode';
+const BACKEND = 'https://globalvin.co/backend/api';
 
 const text = (x) => (x === null || x === undefined || String(x).trim() === '' ? null : String(x).trim());
 const count = (x) => {
@@ -70,11 +70,10 @@ function hideKey(err, apiKey) {
 
 // The key travels in a header, never the URL; errors are scrubbed of it all the same. GlobalVIN's
 // refusals (bad key, no credit, service not enabled) come as JSON with a `message`, which is
-// what the error says. No retries: each new VIN is billed.
-export async function decode(vin, { apiKey, ...opts } = {}) {
-  if (!apiKey) throw new Error('no GlobalVIN API key');
+// what the error says. No retries: a new VIN or report is billed.
+async function call(path, apiKey, opts, request = {}) {
   try {
-    return parseDecode(await getJson(URL_DECODE, { ...opts, retries: 0, timeoutMs: 30000, method: 'POST', headers: { 'x-api-key': apiKey }, body: { vin } }));
+    return await getJson(`${BACKEND}${path}`, { ...opts, retries: 0, timeoutMs: 30000, ...request, headers: { 'x-api-key': apiKey } });
   } catch (e) {
     if (typeof e?.body === 'string') {
       try {
@@ -84,4 +83,58 @@ export async function decode(vin, { apiKey, ...opts } = {}) {
     }
     throw hideKey(e, apiKey);
   }
+}
+
+export async function decode(vin, { apiKey, ...opts } = {}) {
+  if (!apiKey) throw new Error('no GlobalVIN API key');
+  return parseDecode(await call('/vin/lookup/decode', apiKey, opts, { method: 'POST', body: { vin } }));
+}
+
+// Carfax (via GlobalVIN's USA reports, carfax scope). The owner's own copy of a paid report for a
+// North American vehicle, saved as a PDF: buildReport asks only for VINs vPIC recognizes, and the
+// CLI only with --carfax. $3.00 a report. Ordering is asynchronous: the order returns a job id,
+// the job is polled until it finishes, and the finished job names the report whose PDF is
+// fetched. The PDF link needs no key (GlobalVIN treats the report id as the secret), so neither
+// the link nor the id is shown anywhere public.
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+export function parseJob(json) {
+  const what = "GlobalVIN's report job";
+  if (!json || typeof json !== 'object' || typeof json.success !== 'boolean') throw new FormatError(what);
+  if (!json.success) throw new Error(`GlobalVIN: ${text(json.message) ?? 'request refused'}`);
+  const d = json.data;
+  if (!d || typeof d !== 'object' || !text(d.jobId)) throw new FormatError(what);
+  const r = d.result && typeof d.result === 'object' ? d.result : {};
+  return {
+    jobId: text(d.jobId),
+    done: d.isComplete === true || d.status === 'completed',
+    failed: d.isFailed === true || d.status === 'failed' || r.success === false,
+    message: text(d.statusMessage) ?? text(r.message) ?? text(d.status),
+    reportId: text(r.reportId) ?? text(d.reportId),
+    freeRepeat: r.freeRepeat === true || d.reused === true,
+  };
+}
+
+// Orders the Carfax report and waits for it (up to maxWaitMs). Returns { reportId, pdfUrl,
+// freeRepeat }. The order itself is never retried; polling is free.
+export async function carfaxReport(vin, { apiKey, pollMs = 5000, maxWaitMs = 180000, ...opts } = {}) {
+  if (!apiKey) throw new Error('no GlobalVIN API key');
+  let job = parseJob(await call(`/usa/report/carfax/${encodeURIComponent(vin)}`, apiKey, opts));
+  const until = Date.now() + maxWaitMs;
+  while (!job.done && !job.failed) {
+    if (Date.now() > until) throw new Error(`GlobalVIN: the Carfax report wasn't ready after ${Math.round(maxWaitMs / 1000)} s (job ${job.jobId}); it may still arrive in your GlobalVIN dashboard`);
+    await wait(pollMs);
+    job = parseJob(await call(`/jobs/status/${encodeURIComponent(job.jobId)}`, apiKey, opts));
+  }
+  if (job.failed || !job.reportId) throw new Error(`GlobalVIN: the Carfax report failed${job.message ? ` (${job.message})` : ''}`);
+  return { source: 'Carfax via GlobalVIN', reportId: job.reportId, pdfUrl: `${BACKEND}/vhrs/${encodeURIComponent(job.reportId)}/pdf`, freeRepeat: job.freeRepeat };
+}
+
+// The finished report's PDF, as bytes.
+export async function reportPdf(pdfUrl, { fetch = globalThis.fetch } = {}) {
+  const res = await fetch(pdfUrl, { redirect: 'follow' });
+  if (!res.ok) throw new Error(`GlobalVIN: the report file couldn't be downloaded (HTTP ${res.status})`);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (String.fromCharCode(...bytes.slice(0, 5)) !== '%PDF-') throw new Error("GlobalVIN: the report file isn't a PDF");
+  return bytes;
 }
