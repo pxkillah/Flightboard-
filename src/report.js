@@ -3,6 +3,7 @@ import { decodeVin } from './sources/vpic.js';
 import * as nhtsa from './sources/nhtsa.js';
 import * as tc from './sources/transportCanada.js';
 import * as mc from './sources/marketcheck.js';
+import * as gv from './sources/globalvin.js';
 import { recallMismatch } from './recallMatch.js';
 import { errorKind } from './http.js';
 import { fmtNumber } from './i18n.js';
@@ -11,13 +12,27 @@ import { fmtNumber } from './i18n.js';
 // one slow or down API doesn't sink the whole report. errors[section] holds the technical
 // message and errorKinds[section] what kind of failure it was (see errorKind in http.js);
 // a VIN that decodes without a make, model and year is kind 'unrecognized'.
-// listingHistory (MarketCheck) is paid, so it runs only when a marketcheckKey is passed.
-export async function buildReport(input, { fetch, include = {}, force = false, lang = 'en', marketcheckKey } = {}) {
+// listingHistory (MarketCheck), globalDecode and carfax (both GlobalVIN) are paid, so each runs
+// only when its key is passed. carfax runs only for a North American vehicle, meaning one vPIC
+// recognizes; for any other VIN it's skipped (report.skipped.carfax) and nothing is billed.
+export async function buildReport(input, { fetch, include = {}, force = false, lang = 'en', marketcheckKey, globalvinKey, carfaxKey } = {}) {
   const opts = fetch ? { fetch } : {};
   const check = validateVin(input);
   const report = { vin: check.vin, vinCheck: check, generatedAt: new Date().toISOString(), errors: {}, errorKinds: {} };
   if (!check.valid && !force) return report;
+  const run = async (name, fn) => {
+    if (include[name] === false) return;
+    try {
+      report[name] = await fn();
+    } catch (e) {
+      report.errors[name] = e.message;
+      report.errorKinds[name] = errorKind(e);
+    }
+  };
 
+  // GlobalVIN decodes from its own catalogues, so it runs alongside vPIC rather than after it:
+  // it's most useful for the cars vPIC doesn't know (built for China).
+  const global = globalvinKey ? run('globalDecode', () => gv.decode(check.vin, { apiKey: globalvinKey, ...opts })) : null;
   try {
     report.vehicle = await decodeVin(check.vin, opts);
   } catch (e) {
@@ -28,6 +43,8 @@ export async function buildReport(input, { fetch, include = {}, force = false, l
   if (!v?.make || !v?.model || !v?.year) {
     report.errors.vehicle ??= 'decoder did not return make/model/year';
     report.errorKinds.vehicle ??= 'unrecognized';
+    if (carfaxKey) report.skipped = { carfax: 'not a North American vehicle (NHTSA did not recognize the VIN)' };
+    await global;
     return report;
   }
   const ymm = { make: v.make, model: v.model, year: v.year };
@@ -39,15 +56,8 @@ export async function buildReport(input, { fetch, include = {}, force = false, l
     safetyRatings: () => nhtsa.safetyRatings(ymm, opts),
   };
   if (marketcheckKey) sections.listingHistory = async () => mc.summarizeHistory(await mc.history(check.vin, { apiKey: marketcheckKey, ...opts }));
-  await Promise.all(Object.entries(sections).map(async ([name, fn]) => {
-    if (include[name] === false) return;
-    try {
-      report[name] = await fn();
-    } catch (e) {
-      report.errors[name] = e.message;
-      report.errorKinds[name] = errorKind(e);
-    }
-  }));
+  if (carfaxKey) sections.carfax = () => gv.carfaxReport(check.vin, { apiKey: carfaxKey, ...opts });
+  await Promise.all([global, ...Object.entries(sections).map(([name, fn]) => run(name, fn))]);
   for (const key of ['recallsUS', 'recallsCanada']) {
     report[key]?.forEach((r) => { r.mismatch = recallMismatch(r, v, { lang }); });
   }
@@ -91,9 +101,11 @@ export function formatReport(r) {
     for (const s of r.safetyRatings) L.push(`  ${s.description}: overall ${s.overall}, front ${s.frontCrash}, side ${s.sideCrash}, rollover ${s.rollover}`);
   }
   listingBlock(L, r.listingHistory);
+  globalBlock(L, r);
+  carfaxBlock(L, r);
   for (const [k, e] of Object.entries(r.errors)) L.push('', `(${k} unavailable: ${e})`);
   const triedListings = r.listingHistory || r.errors.listingHistory;
-  L.push('', `Not included: accident, ${triedListings ? '' : 'odometer, '}ownership, lien and service history. See README.`);
+  if (!r.carfax) L.push('', `Not included: accident, ${triedListings ? '' : 'odometer, '}ownership, lien and service history. See README.`);
   // API text goes straight to a terminal, so drop control characters that could retitle the
   // window, move the cursor or write the clipboard. Tabs and newlines stay.
   return L.join('\n').replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g, '');
@@ -123,4 +135,31 @@ function listingBlock(L, h) {
     L.push('  Prices and odometer readings are as advertised, not verified. Listings in a province are read as km and CAD.');
   }
   L.push('  Covers dealer websites (US since 2015, Canada since 2018) and Canadian private sellers since 2023, not classified sites such as Kijiji or AutoTrader.ca.');
+}
+
+function globalBlock(L, r) {
+  if (!('globalDecode' in r)) return;
+  const g = r.globalDecode;
+  if (!g || !g.models.length) {
+    L.push('', 'Factory model data (GlobalVIN): no match for this VIN.');
+    return;
+  }
+  const head = [g.brand, g.modelYear && `model year ${g.modelYear}`, g.buildMonth && `built ${g.buildMonth}`, g.madeIn && `in ${g.madeIn}`].filter(Boolean);
+  L.push('', `Factory model data (GlobalVIN)${head.length ? `: ${head.join(', ')}` : ''}${g.exactMatch ? '' : ' (closest match, not exact)'}`);
+  for (const m of g.models) {
+    if (m.description) L.push(`  ${m.description}`);
+    const power = [m.kw && `${m.kw} kW`, m.hp && `${m.hp} hp`].filter(Boolean).join(' / ');
+    const spec = [m.engine && `engine ${m.engine}`, m.displacement, power, m.fuel, m.transmission && `${m.transmission}${m.gears ? `, ${m.gears} speeds` : ''}`, m.drive].filter(Boolean);
+    if (spec.length) L.push(`    ${spec.join(' · ')}`);
+    const body = [m.body, m.doors, m.seats && `${m.seats} seats`, m.emissions && `emissions ${m.emissions}`, m.builtFrom && `produced ${m.builtFrom} to ${m.builtTo ?? 'now'}`].filter(Boolean);
+    if (body.length) L.push(`    ${body.join(' · ')}`);
+  }
+  L.push(`  From GlobalVIN's factory catalogues (strongest for cars built or sold in China).${g.cached ? ' Decoded before, so not billed again.' : ''}`);
+}
+
+function carfaxBlock(L, r) {
+  if (r.skipped?.carfax) L.push('', `Carfax: skipped, ${r.skipped.carfax}. Nothing was charged.`);
+  if (!r.carfax) return;
+  L.push('', `Carfax report (via GlobalVIN): ${r.carfax.file ? `saved to ${r.carfax.file}` : 'ready'}${r.carfax.freeRepeat ? ' (ordered before, so not charged again)' : ''}`);
+  L.push('  Your own copy, for your use; don\'t publish or share it.');
 }

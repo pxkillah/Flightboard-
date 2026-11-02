@@ -16,6 +16,15 @@ Changes people using VIN Report would notice. Newest first.
 - Send feedback opens an email instead of a GitHub issue.
 - A privacy policy page, in English and French, linked from the footer.
 
+- **Carfax reports for North American vehicles (command line, optional, your own GlobalVIN
+  key).** Add `--carfax` to order a Carfax report ($3.00) and save the PDF in your Downloads
+  folder. Only for vehicles NHTSA recognizes; any other VIN is skipped and not charged.
+- **Factory model data from GlobalVIN (command line, optional, your own key).** Add
+  `--globalvin` to get the engine, power, transmission, drive, body, seats and production dates
+  from GlobalVIN's factory catalogues, which also cover cars built for China that NHTSA can't
+  decode. GlobalVIN charges $2.00 for each new VIN, so it runs only when you ask. Put the key
+  in `GLOBALVIN_API_KEY` or `~/.globalvin_key`.
+
 - **Clear recall dates.** Recall dates from NHTSA and Transport Canada are shown the same
   way (YYYY-MM-DD on the command line), so 05/06/2020 can't be read two ways.
 - **Listing history (optional, your own MarketCheck key).** The report can add the car's

@@ -3,7 +3,8 @@
 A command-line VIN lookup that builds a Carfax-style vehicle report from **free, public
 government data**. It needs no API keys and has no dependencies (Node ≥ 22). With your own
 MarketCheck key, the command line and the web page can also show the car's online sale listing
-history (see below).
+history, and with your own GlobalVIN key the command line can add factory model data and order
+a Carfax report for a North American vehicle (see below).
 
 ```
 $ node bin/vehicle-report.js 1HGCM82633A004352
@@ -92,6 +93,43 @@ most 4.
   but Canadian dealers advertise km, so a listing in a province is read as km and CAD.
 - It is not accident, service, ownership or lien history.
 
+### Factory model data (optional, paid, your own GlobalVIN key, command line only)
+
+With a [GlobalVIN](https://globalvin.co) API key, `--globalvin` adds the factory model data
+GlobalVIN's catalogues hold for the VIN: model and trim, engine code, displacement, power,
+fuel, transmission, drive, body, doors, seats, emissions standard, production run, build month
+and country. Its catalogues come from the Chinese market, so it's most useful for cars built or
+sold in China, which NHTSA's decoder doesn't know; it runs even when NHTSA can't decode the VIN.
+
+- **Key:** put it in `GLOBALVIN_API_KEY` or in `~/.globalvin_key` (`chmod 600`). It's sent in a
+  header, only to GlobalVIN, and never printed.
+- **Cost:** GlobalVIN charges $2.00 (USD) for each VIN the account hasn't decoded before; a
+  repeat is free. That's why it runs only with `--globalvin`, never by default, and is never
+  retried. Your dashboard shows the balance.
+- **Command line only:** GlobalVIN refuses calls from a web page, so the page doesn't offer it.
+- **Scope:** of GlobalVIN's history reports, only Carfax is used (next section).
+
+### Carfax report (optional, paid, your own GlobalVIN key, command line only)
+
+`--carfax` orders a Carfax vehicle history report through your GlobalVIN account and saves the
+PDF in your Downloads folder (`Carfax <VIN> <date>.pdf`, never over an earlier file):
+
+```
+$ node bin/vehicle-report.js 1HGCM82633A004352 --carfax
+```
+
+- **North America only:** it's ordered only when NHTSA's decoder recognizes the VIN, meaning a
+  vehicle made for the US or Canadian market. Any other VIN is skipped and nothing is charged.
+- **Cost:** $3.00 (USD) a report, from your GlobalVIN credit (top up in the GlobalVIN
+  dashboard). The order is never retried; if GlobalVIN is slow, the report still lands in
+  your GlobalVIN dashboard.
+- **Same key** as `--globalvin`, in `GLOBALVIN_API_KEY` or `~/.globalvin_key`. GlobalVIN also
+  emails each report to the account's address.
+- **Your own copy:** the report is for your own use. GlobalVIN resells Carfax reports; whether
+  Carfax licenses that resale isn't something this project can confirm, so the report is
+  never shown on the web page or in the app, and you shouldn't publish or share it. The PDF
+  link GlobalVIN returns (in `--json` output) needs no key, so treat it as private.
+
 Each section is fetched on its own. If one API is down, the report still comes back with that
 section listed under `errors`.
 
@@ -116,14 +154,17 @@ in a public API. The legitimate ways to get it are:
 - **Stolen status:** the CPIC public stolen vehicle check.
 
 Scraping carfax.ca or getting around its paywall would breach its terms of use, so this
-project does not do that.
+project does not do that. The one exception to "not included" is the optional, paid Carfax
+report the command line can order through your own GlobalVIN account (above); the web page and
+the app still include no accident, lien, ownership or service history.
 
 ## Privacy
 
 - **What leaves your device:** the VIN goes to NHTSA's VIN decoder (vPIC), and the decoded
   year, make and model go to NHTSA's recall, complaint and crash-rating services. If you've
   added a MarketCheck key, the VIN and your key go to MarketCheck when you ask for a listing
-  history (the command line asks on every lookup; the page only when you tap the button). GitHub
+  history (the command line asks on every lookup; the page only when you tap the button). On the
+  command line, `--globalvin` and `--carfax` send the VIN and your GlobalVIN key to GlobalVIN. GitHub
   Pages, which hosts the page, sees each page request, including `?vin=` when you open a
   report link.
 - **What stays on your device:** your records, the VINs you check, your MarketCheck key and
@@ -136,7 +177,7 @@ project does not do that.
   VIN, only if you tick the box). Nothing is sent until you send it.
 - The full privacy policy is `privacy.html`, which is also inside the app.
 - The report is free and provided as is. Recalls are matched by model, so confirm with a
-  dealer. Not affiliated with NHTSA, Transport Canada, MarketCheck or Carfax.
+  dealer. Not affiliated with NHTSA, Transport Canada, MarketCheck, GlobalVIN or Carfax.
 
 ## Run it locally
 

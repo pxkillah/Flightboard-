@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm test                                   # all tests (node --test test/*.test.js), fully offline
 node --test test/recallMatch.test.js       # one test file
 node --test --test-name-pattern="<regex>" test/*.test.js   # tests matching a name
-node bin/vehicle-report.js <VIN> [--json] [--force] [--no-ratings] [--no-complaints] [--no-history]
+node bin/vehicle-report.js <VIN> [--json] [--force] [--no-ratings] [--no-complaints] [--no-history] [--globalvin] [--carfax]
 node scripts/live-check.js                 # real NHTSA calls; runs daily in GitHub Actions and on PRs that change NHTSA code
 ```
 
@@ -25,6 +25,7 @@ The same modules in `src/` run in both Node and the browser. The page is `index.
 - `src/report.js`: `buildReport(vin, { fetch, include, force })` validates the VIN, decodes it with vPIC (which supplies year, make and model), then fetches each section in parallel. **Each section fails on its own**: an error goes into `report.errors[section]` and does not fail the whole report. `include.<section> === false` skips a section. `formatReport` renders the CLI text.
 - `src/sources/*.js`: one module per API. Each exposes pure `parse*` functions, which the tests exercise, alongside fetch wrappers.
 - `src/sources/marketcheck.js`: MarketCheck History by VIN (listing history). Paid, so `buildReport` runs the `listingHistory` section only when given `marketcheckKey`; the CLI reads it from `MARKETCHECK_API_KEY` or `~/.marketcheck_key`. The page calls `history` itself, only when the visitor taps Show listing history, with the key they saved in `localStorage` (`vin-report:v1:marketcheck`); it keeps each result as a `historyView` per VIN (`vin-report:v1:listings`) and checks it with `isHistoryView` when read back. The key is in the query string, so `history` scrubs it from errors, and the page never writes it into the DOM. A listing in a Canadian province is read as km and CAD (decision 12; the page, decision 13).
+- `src/sources/globalvin.js`: GlobalVIN VIN Decode (factory model data from Chinese-market catalogues). Paid ($2.00 a new VIN), so `buildReport` runs the `globalDecode` section only when given `globalvinKey`, alongside vPIC so it works for VINs vPIC can't decode; the CLI passes it only with `--globalvin`, from `GLOBALVIN_API_KEY` or `~/.globalvin_key`. CLI only: GlobalVIN refuses browser calls. The key goes in the `x-api-key` header; calls are never retried. `carfaxReport` orders a Carfax report (`--carfax`, $3.00), polls the job and returns the PDF link; `buildReport` runs the `carfax` section only when vPIC recognizes the VIN (North America), else sets `report.skipped.carfax`; the CLI saves the PDF to ~/Downloads.
 - `src/dates.js`: `isoDate` turns each source's date order (NHTSA d/m/y, Transport Canada m/d/y) into YYYY-MM-DD; parsers return dates in that form.
 - `src/http.js`: `getJson` handles retries with backoff on 5xx/429/network errors, the timeout, and 404 → `null`. It omits `User-Agent` in the browser so requests don't trigger a CORS preflight.
 - `src/recallMatch.js`: recalls are looked up by year/make/model, not by VIN. `recallMismatch` compares each recall's text with the decoded vehicle (drive type, engine, fuel, roof height) and returns reasons it probably doesn't apply. Mismatched recalls are **flagged (`mismatch`), never dropped**, and a check only fires on an explicit contradiction.
@@ -53,7 +54,7 @@ The owner requires every app to follow `PRODUCTION_STANDARD.md`. This app's stat
 
 ## Project constraints (from README)
 
-- Use only legitimate public data. Don't scrape carfax.ca or get around its paywall. Accident, lien, ownership and service history are deliberately out of scope (odometer readings appear only as advertised in MarketCheck listings, with the user's own key), and the README lists where that data legitimately lives.
+- Use only legitimate public data. Don't scrape carfax.ca or get around its paywall. Accident, lien, ownership and service history are deliberately out of scope (odometer readings appear only as advertised in MarketCheck listings, with the user's own key), and the README lists where that data legitimately lives. One owner-approved exception (2026-11-01): the CLI's `--carfax` orders a paid Carfax report through the user's own GlobalVIN account, for North American vehicles only, saved as a PDF for their own use. Never bring Carfax data into the web page or the app, and never publish it.
 - Recall results show which campaigns apply to the model, not whether this particular car has been repaired. Keep the wording consistent with that.
 
 ## MCP

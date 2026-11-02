@@ -1,6 +1,6 @@
 export class HttpError extends Error {
-  constructor(url, status, body) {
-    super(`GET ${url} -> HTTP ${status}`);
+  constructor(url, status, body, method = 'GET') {
+    super(`${method} ${url} -> HTTP ${status}`);
     this.name = 'HttpError';
     this.url = url;
     this.status = status;
@@ -38,17 +38,20 @@ const HEADERS = typeof window === 'undefined'
   ? { accept: 'application/json', 'user-agent': 'vehicle-report/0.1' }
   : { accept: 'application/json' };
 
-export async function getJson(url, { fetch = globalThis.fetch, timeoutMs = 15000, retries = 2, backoffMs = 500 } = {}) {
+// A POST sends `body` as JSON. Pass retries: 0 for a billed call, so a retry can't bill twice.
+export async function getJson(url, { fetch = globalThis.fetch, timeoutMs = 15000, retries = 2, backoffMs = 500, method = 'GET', headers = {}, body } = {}) {
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fetch(url, {
-        headers: HEADERS,
+        method,
+        headers: body === undefined ? { ...HEADERS, ...headers } : { ...HEADERS, 'content-type': 'application/json', ...headers },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         signal: timeoutSignal(timeoutMs),
       });
       if (res.status === 404) return null;
       const text = await res.text();
-      if (!res.ok) throw new HttpError(url, res.status, text);
+      if (!res.ok) throw new HttpError(url, res.status, text, method);
       return text ? JSON.parse(text) : null;
     } catch (err) {
       lastErr = err;
